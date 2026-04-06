@@ -1,0 +1,14 @@
+{
+  "appId": "com.brainfood.app",
+  "appName": "BrainFood",
+  "webDir": "out",
+  "server": {
+    "androidScheme": "https"
+  },
+  "ios": {
+    "contentInset": "automatic"
+  },
+  "plugins": {
+    "Haptics": {}
+  }
+}

@@ -1,0 +1,78 @@
+import { getDbAsync } from "@/lib/db";
+import { projects, ideas } from "@/lib/db/schema";
+import { eq, desc, and, isNotNull, gte, lt, count } from "drizzle-orm";
+import { getRequiredUser } from "@/lib/auth-utils";
+import { DashboardClient } from "@/components/dashboard/DashboardClient";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { UserMenu } from "@/components/auth/UserMenu";
+
+export const dynamic = "force-dynamic";
+
+export default async function DashboardPage() {
+  const user = await getRequiredUser();
+  const db = await getDbAsync();
+
+  // Get start and end of today
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  // Parallel queries for stats
+  const [projectCountResult, todayCountResult, inboxCountResult, inProgressCountResult, recentIdeas] =
+    await Promise.all([
+      // Count of projects
+      db.select({ value: count() }).from(projects).where(eq(projects.userId, user.id)),
+
+      // Count of today's tasks
+      db
+        .select({ value: count() })
+        .from(ideas)
+        .where(
+          and(
+            eq(ideas.userId, user.id),
+            isNotNull(ideas.scheduledForToday),
+            gte(ideas.scheduledForToday, today),
+            lt(ideas.scheduledForToday, tomorrow)
+          )
+        ),
+
+      // Count of inbox tasks
+      db
+        .select({ value: count() })
+        .from(ideas)
+        .where(and(eq(ideas.userId, user.id), eq(ideas.status, "inbox"))),
+
+      // Count of in-progress tasks
+      db
+        .select({ value: count() })
+        .from(ideas)
+        .where(and(eq(ideas.userId, user.id), eq(ideas.status, "in-progress"))),
+
+      // 5 most recent ideas with project info
+      db.query.ideas.findMany({
+        where: and(eq(ideas.userId, user.id), eq(ideas.status, "inbox")),
+        with: { project: true },
+        orderBy: [desc(ideas.createdAt)],
+        limit: 5,
+      }),
+    ]);
+
+  return (
+    <>
+      <PageHeader
+        title="BrainFood"
+        right={<UserMenu />}
+      />
+      <DashboardClient
+        stats={{
+          projectCount: projectCountResult[0]?.value ?? 0,
+          todayCount: todayCountResult[0]?.value ?? 0,
+          inboxCount: inboxCountResult[0]?.value ?? 0,
+          inProgressCount: inProgressCountResult[0]?.value ?? 0,
+        }}
+        recentIdeas={recentIdeas}
+      />
+    </>
+  );
+}
