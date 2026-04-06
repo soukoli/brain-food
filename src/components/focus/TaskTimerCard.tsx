@@ -24,9 +24,7 @@ export function TaskTimerCard({ idea }: TaskTimerCardProps) {
   const getInitialSeconds = () => {
     let total = idea.timeSpentSeconds;
     if (idea.isTimerRunning && idea.lastTimerStartedAt) {
-      const elapsed = Math.floor(
-        (Date.now() - new Date(idea.lastTimerStartedAt).getTime()) / 1000
-      );
+      const elapsed = Math.floor((Date.now() - new Date(idea.lastTimerStartedAt).getTime()) / 1000);
       total += elapsed;
     }
     return total;
@@ -39,9 +37,21 @@ export function TaskTimerCard({ idea }: TaskTimerCardProps) {
 
   // Sync with server state
   useEffect(() => {
-    setSeconds(getInitialSeconds());
+    // Calculate initial seconds including elapsed time if timer was running
+    let total = idea.timeSpentSeconds;
+    if (idea.isTimerRunning && idea.lastTimerStartedAt) {
+      const elapsed = Math.floor((Date.now() - new Date(idea.lastTimerStartedAt).getTime()) / 1000);
+      total += elapsed;
+    }
+    setSeconds(total);
     setIsRunning(idea.isTimerRunning);
-  }, [idea.timeSpentSeconds, idea.isTimerRunning, idea.lastTimerStartedAt]);
+  }, [
+    idea.timeSpentSeconds,
+    idea.isTimerRunning,
+    idea.lastTimerStartedAt,
+    setSeconds,
+    setIsRunning,
+  ]);
 
   const handleTimerAction = async (action: "start" | "pause" | "complete") => {
     setIsUpdating(true);
@@ -83,10 +93,7 @@ export function TaskTimerCard({ idea }: TaskTimerCardProps) {
   };
 
   // Warning threshold progress
-  const warningProgress = Math.min(
-    (seconds / idea.focusWarningThreshold) * 100,
-    100
-  );
+  const warningProgress = Math.min((seconds / idea.focusWarningThreshold) * 100, 100);
   const isOverThreshold = seconds >= idea.focusWarningThreshold;
 
   return (
@@ -106,9 +113,7 @@ export function TaskTimerCard({ idea }: TaskTimerCardProps) {
 
         <div className="flex-1 min-w-0">
           {/* Title */}
-          <h3 className="font-semibold text-slate-900 dark:text-slate-50">
-            {idea.title}
-          </h3>
+          <h3 className="font-semibold text-slate-900 dark:text-slate-50">{idea.title}</h3>
 
           {/* Description */}
           {idea.description && (
@@ -119,9 +124,7 @@ export function TaskTimerCard({ idea }: TaskTimerCardProps) {
 
           {/* Project name */}
           {idea.project && (
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              {idea.project.name}
-            </p>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{idea.project.name}</p>
           )}
 
           {/* Timer display */}
@@ -147,10 +150,7 @@ export function TaskTimerCard({ idea }: TaskTimerCardProps) {
           <div className="mt-2">
             <Progress
               value={warningProgress}
-              className={cn(
-                "h-1",
-                isOverThreshold && "[&>div]:bg-orange-500"
-              )}
+              className={cn("h-1", isOverThreshold && "[&>div]:bg-orange-500")}
             />
           </div>
         </div>
@@ -167,11 +167,7 @@ export function TaskTimerCard({ idea }: TaskTimerCardProps) {
               isRunning && "bg-blue-100 hover:bg-blue-200 dark:bg-blue-900 dark:hover:bg-blue-800"
             )}
           >
-            {isRunning ? (
-              <Pause className="h-5 w-5" />
-            ) : (
-              <Play className="h-5 w-5 ml-0.5" />
-            )}
+            {isRunning ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 ml-0.5" />}
           </Button>
           <Button
             size="icon"
