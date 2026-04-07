@@ -4,7 +4,7 @@
  */
 
 import { drizzle } from "drizzle-orm/node-postgres";
-import { Pool } from "pg";
+import { Pool, PoolConfig } from "pg";
 import * as schema from "./schema";
 
 // Singleton instances
@@ -21,6 +21,39 @@ function isAwsIamAuth(): boolean {
     !process.env.DATABASE_URL &&
     !process.env.POSTGRES_URL
   );
+}
+
+/**
+ * Parse connection string and extract components
+ */
+function parseConnectionString(connectionString: string): PoolConfig {
+  const url = new URL(connectionString);
+  const params = url.searchParams;
+
+  // Determine SSL configuration
+  const sslMode = params.get("sslmode");
+  let ssl: PoolConfig["ssl"] = false;
+
+  if (sslMode === "require" || sslMode === "verify-full" || sslMode === "prefer") {
+    // Use verify-full semantics to avoid the deprecation warning
+    ssl = {
+      rejectUnauthorized: sslMode === "verify-full",
+    };
+  }
+
+  // Remove SSL params from search to avoid double-handling
+  params.delete("sslmode");
+  params.delete("channel_binding");
+
+  return {
+    host: url.hostname,
+    port: url.port ? parseInt(url.port) : 5432,
+    user: url.username,
+    password: decodeURIComponent(url.password),
+    database: url.pathname.slice(1), // Remove leading "/"
+    ssl,
+    max: 20,
+  };
 }
 
 /**
@@ -60,7 +93,7 @@ async function createAwsIamPool(): Promise<Pool> {
 }
 
 /**
- * Create pool with connection string (local development)
+ * Create pool with connection string (local development and Neon)
  */
 function createConnectionStringPool(): Pool {
   const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL;
@@ -71,6 +104,14 @@ function createConnectionStringPool(): Pool {
     );
   }
 
+  // Check if it's a Neon or other cloud database (has sslmode in URL)
+  if (connectionString.includes("sslmode=")) {
+    // Parse and configure SSL properly to avoid deprecation warning
+    const config = parseConnectionString(connectionString);
+    return new Pool(config);
+  }
+
+  // Local development - simple connection string
   return new Pool({
     connectionString,
     ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
