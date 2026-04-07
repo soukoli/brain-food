@@ -15,6 +15,13 @@ export interface ProjectWithCount extends Project {
 }
 
 /**
+ * Project with its ideas (for combined view)
+ */
+export interface ProjectWithIdeas extends Project {
+  ideas: Idea[];
+}
+
+/**
  * Dashboard statistics
  */
 export interface DashboardStats {
