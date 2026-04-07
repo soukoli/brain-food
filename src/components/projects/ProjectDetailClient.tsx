@@ -81,8 +81,7 @@ export function ProjectDetailClient({ project, ideas }: ProjectDetailClientProps
                   <DialogTitle>Delete Project</DialogTitle>
                   <DialogDescription>
                     Are you sure you want to delete &quot;{project.name}&quot;? This action cannot
-                    be undone. Ideas in this project will not be deleted but will become
-                    unassigned.
+                    be undone. Ideas in this project will not be deleted but will become unassigned.
                   </DialogDescription>
                 </DialogHeader>
                 <DialogFooter>
@@ -101,10 +100,17 @@ export function ProjectDetailClient({ project, ideas }: ProjectDetailClientProps
 
       {/* Project header card */}
       <Block className="!mb-4">
-        <Card className="p-4">
+        <Card
+          className="p-4 border-2"
+          style={{
+            borderColor: project.color + "40",
+            background: `linear-gradient(135deg, ${project.color}10 0%, ${project.color}05 100%)`,
+          }}
+        >
           <div className="flex items-start gap-3">
+            {/* Color bar */}
             <div
-              className="w-12 h-12 rounded-xl shrink-0"
+              className="w-2 h-full min-h-[3rem] rounded-full shrink-0 self-stretch"
               style={{ backgroundColor: project.color }}
             />
             <div className="flex-1 min-w-0">
@@ -116,7 +122,7 @@ export function ProjectDetailClient({ project, ideas }: ProjectDetailClientProps
                   {project.description}
                 </p>
               )}
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
+              <p className="text-sm font-semibold mt-2" style={{ color: project.color }}>
                 {ideas.length} {ideas.length === 1 ? "idea" : "ideas"}
               </p>
             </div>
@@ -129,7 +135,7 @@ export function ProjectDetailClient({ project, ideas }: ProjectDetailClientProps
         <Block>
           <Card className="p-8 text-center">
             <Lightbulb className="h-12 w-12 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-50 mb-2">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-50 mb-2">
               No ideas yet
             </h3>
             <p className="text-slate-500 dark:text-slate-400 mb-4">
@@ -138,7 +144,7 @@ export function ProjectDetailClient({ project, ideas }: ProjectDetailClientProps
             <IdeaSheet
               projectId={project.id}
               trigger={
-                <Button>
+                <Button style={{ backgroundColor: project.color }}>
                   <Plus className="h-4 w-4 mr-2" />
                   Add Idea
                 </Button>
@@ -152,7 +158,7 @@ export function ProjectDetailClient({ project, ideas }: ProjectDetailClientProps
             <IdeaSheet
               projectId={project.id}
               trigger={
-                <Button size="sm">
+                <Button size="sm" style={{ backgroundColor: project.color }}>
                   <Plus className="h-4 w-4 mr-2" />
                   Add Idea
                 </Button>

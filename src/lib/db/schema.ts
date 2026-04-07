@@ -8,6 +8,7 @@ import {
   integer,
   jsonb,
   primaryKey,
+  index,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import type { AdapterAccountType } from "@auth/core/adapters";
@@ -71,72 +72,92 @@ export const sessions = pgTable("sessions", {
  * Projects Table
  * Represents user projects for organizing ideas
  */
-export const projects = pgTable("projects", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: varchar("name", { length: 255 }).notNull(),
-  description: text("description"),
-  color: varchar("color", { length: 50 }).default("#3B82F6").notNull(),
-  status: varchar("status", { length: 50 })
-    .default("active")
-    .notNull()
-    .$type<"active" | "archived" | "completed">(),
-  userId: text("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-});
+export const projects = pgTable(
+  "projects",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: varchar("name", { length: 255 }).notNull(),
+    description: text("description"),
+    color: varchar("color", { length: 50 }).default("#3B82F6").notNull(),
+    status: varchar("status", { length: 50 })
+      .default("active")
+      .notNull()
+      .$type<"active" | "archived" | "completed">(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    // Index for listing user's projects sorted by creation date
+    userIdCreatedAtIdx: index("projects_user_id_created_at_idx").on(table.userId, table.createdAt),
+  })
+);
 
 /**
  * Ideas Table
  * Represents captured ideas/tasks with time tracking
  */
-export const ideas = pgTable("ideas", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  
-  // Content fields
-  title: varchar("title", { length: 255 }).notNull(),
-  description: text("description"), // Markdown-enabled description
-  linkUrl: varchar("link_url", { length: 2048 }), // Optional link
-  voiceTranscript: text("voice_transcript"), // Transcript from voice input
-  
-  // Organization
-  projectId: uuid("project_id").references(() => projects.id, { onDelete: "set null" }),
-  userId: text("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  
-  // Status and priority
-  status: varchar("status", { length: 50 })
-    .default("inbox")
-    .notNull()
-    .$type<"inbox" | "in-progress" | "completed" | "archived" | "deleted">(),
-  priority: varchar("priority", { length: 50 }).$type<"low" | "medium" | "high" | "urgent">(),
-  
-  // Capture method
-  captureMethod: varchar("capture_method", { length: 50 })
-    .default("text")
-    .$type<"text" | "voice" | "link">(),
-  
-  // AI processing (for future use)
-  aiProcessed: boolean("ai_processed").default(false).notNull(),
-  aiMetadata: jsonb("ai_metadata").$type<Record<string, unknown>>(),
-  
-  // Time tracking
-  startedAt: timestamp("started_at", { withTimezone: true }),
-  completedAt: timestamp("completed_at", { withTimezone: true }),
-  timeSpentSeconds: integer("time_spent_seconds").default(0).notNull(),
-  isTimerRunning: boolean("is_timer_running").default(false).notNull(),
-  lastTimerStartedAt: timestamp("last_timer_started_at", { withTimezone: true }),
-  focusWarningThreshold: integer("focus_warning_threshold").default(7200).notNull(), // 2 hours default
-  
-  // Daily planning
-  scheduledForToday: timestamp("scheduled_for_today", { withTimezone: true }),
-  
-  // Timestamps
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
-});
+export const ideas = pgTable(
+  "ideas",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+
+    // Content fields
+    title: varchar("title", { length: 255 }).notNull(),
+    description: text("description"), // Markdown-enabled description
+    linkUrl: varchar("link_url", { length: 2048 }), // Optional link
+    voiceTranscript: text("voice_transcript"), // Transcript from voice input
+
+    // Organization
+    projectId: uuid("project_id").references(() => projects.id, { onDelete: "set null" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+
+    // Status and priority
+    status: varchar("status", { length: 50 })
+      .default("inbox")
+      .notNull()
+      .$type<"inbox" | "in-progress" | "completed" | "archived" | "deleted">(),
+    priority: varchar("priority", { length: 50 }).$type<"low" | "medium" | "high" | "urgent">(),
+
+    // Capture method
+    captureMethod: varchar("capture_method", { length: 50 })
+      .default("text")
+      .$type<"text" | "voice" | "link">(),
+
+    // AI processing (for future use)
+    aiProcessed: boolean("ai_processed").default(false).notNull(),
+    aiMetadata: jsonb("ai_metadata").$type<Record<string, unknown>>(),
+
+    // Time tracking
+    startedAt: timestamp("started_at", { withTimezone: true }),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    timeSpentSeconds: integer("time_spent_seconds").default(0).notNull(),
+    isTimerRunning: boolean("is_timer_running").default(false).notNull(),
+    lastTimerStartedAt: timestamp("last_timer_started_at", { withTimezone: true }),
+    focusWarningThreshold: integer("focus_warning_threshold").default(7200).notNull(), // 2 hours default
+
+    // Daily planning
+    scheduledForToday: timestamp("scheduled_for_today", { withTimezone: true }),
+
+    // Timestamps
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    // Index for listing user's ideas sorted by creation date
+    userIdCreatedAtIdx: index("ideas_user_id_created_at_idx").on(table.userId, table.createdAt),
+    // Index for filtering by project
+    projectIdIdx: index("ideas_project_id_idx").on(table.projectId),
+    // Index for filtering by status (inbox, in-progress, etc.)
+    userIdStatusIdx: index("ideas_user_id_status_idx").on(table.userId, table.status),
+    // Index for daily focus view (scheduled for today)
+    scheduledForTodayIdx: index("ideas_scheduled_for_today_idx").on(table.scheduledForToday),
+  })
+);
 
 /**
  * Tags Table

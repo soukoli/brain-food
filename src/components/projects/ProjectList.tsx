@@ -38,10 +38,13 @@ export function ProjectList({ projects }: ProjectListProps) {
   }
 
   return (
-    <Block className="space-y-3">
-      {projects.map((project) => (
-        <ProjectCard key={project.id} project={project} />
-      ))}
+    <Block>
+      {/* Grid layout for colorful project cards */}
+      <div className="grid grid-cols-2 gap-3">
+        {projects.map((project) => (
+          <ProjectCard key={project.id} project={project} />
+        ))}
+      </div>
     </Block>
   );
 }

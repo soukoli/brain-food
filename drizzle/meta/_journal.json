@@ -8,6 +8,13 @@
       "when": 1775550933484,
       "tag": "0000_majestic_carnage",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1775553313557,
+      "tag": "0001_fuzzy_sinister_six",
+      "breakpoints": true
     }
   ]
 }

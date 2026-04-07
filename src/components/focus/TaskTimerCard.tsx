@@ -100,20 +100,20 @@ export function TaskTimerCard({ idea }: TaskTimerCardProps) {
     <Card
       className={cn(
         "p-4 transition-all duration-200",
-        isRunning && "ring-2 ring-blue-500 shadow-lg",
-        isOverThreshold && isRunning && "ring-orange-500"
+        isRunning && "ring-2 ring-orange-500 shadow-lg",
+        isOverThreshold && isRunning && "ring-red-500 bg-red-50 dark:bg-red-950/20"
       )}
     >
       <div className="flex items-start gap-3">
-        {/* Project color */}
-        <span
-          className="w-2.5 h-2.5 rounded-full shrink-0 mt-1.5"
+        {/* Project color bar */}
+        <div
+          className="w-1.5 h-full min-h-[4rem] rounded-full shrink-0 self-stretch"
           style={{ backgroundColor: idea.project?.color ?? "#94a3b8" }}
         />
 
         <div className="flex-1 min-w-0">
-          {/* Title */}
-          <h3 className="font-semibold text-slate-900 dark:text-slate-50">{idea.title}</h3>
+          {/* Title - BOLD */}
+          <h3 className="font-bold text-base text-slate-900 dark:text-slate-50">{idea.title}</h3>
 
           {/* Description */}
           {idea.description && (
@@ -122,9 +122,11 @@ export function TaskTimerCard({ idea }: TaskTimerCardProps) {
             </p>
           )}
 
-          {/* Project name */}
+          {/* Project name with color */}
           {idea.project && (
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{idea.project.name}</p>
+            <p className="mt-1 text-xs font-medium" style={{ color: idea.project.color }}>
+              {idea.project.name}
+            </p>
           )}
 
           {/* Timer display */}
@@ -133,15 +135,22 @@ export function TaskTimerCard({ idea }: TaskTimerCardProps) {
               className={cn(
                 "text-2xl font-mono font-bold",
                 isRunning && "timer-running",
-                isOverThreshold ? "text-orange-600" : "text-slate-900 dark:text-slate-50"
+                isOverThreshold
+                  ? "text-red-600"
+                  : isRunning
+                    ? "text-orange-600"
+                    : "text-slate-900 dark:text-slate-50"
               )}
             >
               {formattedTime}
             </div>
             {isRunning && (
-              <Badge variant={isOverThreshold ? "warning" : "default"}>
+              <Badge
+                variant={isOverThreshold ? "destructive" : "default"}
+                className={cn(!isOverThreshold && "bg-orange-500")}
+              >
                 <Clock className="w-3 h-3 mr-1" />
-                Active
+                {isOverThreshold ? "Over time!" : "Active"}
               </Badge>
             )}
           </div>
@@ -150,7 +159,10 @@ export function TaskTimerCard({ idea }: TaskTimerCardProps) {
           <div className="mt-2">
             <Progress
               value={warningProgress}
-              className={cn("h-1", isOverThreshold && "[&>div]:bg-orange-500")}
+              className={cn(
+                "h-1.5",
+                isOverThreshold ? "[&>div]:bg-red-500" : "[&>div]:bg-orange-500"
+              )}
             />
           </div>
         </div>
@@ -164,7 +176,9 @@ export function TaskTimerCard({ idea }: TaskTimerCardProps) {
             disabled={isUpdating}
             className={cn(
               "h-12 w-12 rounded-full",
-              isRunning && "bg-blue-100 hover:bg-blue-200 dark:bg-blue-900 dark:hover:bg-blue-800"
+              !isRunning && "bg-orange-500 hover:bg-orange-600",
+              isRunning &&
+                "bg-orange-100 hover:bg-orange-200 dark:bg-orange-900 dark:hover:bg-orange-800"
             )}
           >
             {isRunning ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 ml-0.5" />}
@@ -174,7 +188,7 @@ export function TaskTimerCard({ idea }: TaskTimerCardProps) {
             variant="outline"
             onClick={handleComplete}
             disabled={isUpdating}
-            className="h-12 w-12 rounded-full text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900"
+            className="h-12 w-12 rounded-full text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900 border-green-200"
           >
             <Check className="h-5 w-5" />
           </Button>

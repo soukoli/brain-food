@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Calendar, Loader2 } from "lucide-react";
+import { Target, Loader2, CheckCircle2 } from "lucide-react";
 import { PRIORITIES } from "@/lib/constants";
 import { toast } from "sonner";
 import type { Idea } from "@/lib/db/schema";
@@ -61,15 +61,15 @@ export function IdeaSheet({ idea, projectId, trigger, onSuccess }: IdeaSheetProp
       });
 
       if (!response.ok) {
-        throw new Error("Failed to schedule idea");
+        throw new Error("Failed to add to Focus");
       }
 
-      toast.success("Scheduled for today!");
+      toast.success("Added to Focus!");
       setOpen(false);
       router.refresh();
       onSuccess?.();
     } catch {
-      toast.error("Failed to schedule idea");
+      toast.error("Failed to add to Focus");
     } finally {
       setIsScheduling(false);
     }
@@ -133,7 +133,7 @@ export function IdeaSheet({ idea, projectId, trigger, onSuccess }: IdeaSheetProp
       <DrawerTrigger asChild>{trigger}</DrawerTrigger>
       <DrawerContent>
         <DrawerHeader>
-          <DrawerTitle>{isEdit ? "Edit Idea" : "New Idea"}</DrawerTitle>
+          <DrawerTitle className="font-bold">{isEdit ? "Edit Idea" : "New Idea"}</DrawerTitle>
           <DrawerDescription>
             {isEdit ? "Update your idea" : "Capture a new idea"}
           </DrawerDescription>
@@ -149,6 +149,7 @@ export function IdeaSheet({ idea, projectId, trigger, onSuccess }: IdeaSheetProp
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               autoFocus
+              className="font-bold text-base"
             />
           </div>
 
@@ -160,7 +161,7 @@ export function IdeaSheet({ idea, projectId, trigger, onSuccess }: IdeaSheetProp
               placeholder="Add more details..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              rows={4}
+              rows={3}
             />
           </div>
 
@@ -196,24 +197,50 @@ export function IdeaSheet({ idea, projectId, trigger, onSuccess }: IdeaSheetProp
               </SelectContent>
             </Select>
           </div>
+
+          {/* Quick Focus action for existing ideas */}
+          {isEdit && (
+            <div
+              className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                isScheduledForToday
+                  ? "border-green-500 bg-green-50 dark:bg-green-950"
+                  : "border-orange-200 dark:border-orange-800 hover:border-orange-400"
+              }`}
+              onClick={!isScheduledForToday ? handleScheduleForToday : undefined}
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className={`p-2 rounded-lg ${
+                    isScheduledForToday
+                      ? "bg-green-500 text-white"
+                      : "bg-orange-100 dark:bg-orange-900 text-orange-600"
+                  }`}
+                >
+                  {isScheduledForToday ? (
+                    <CheckCircle2 className="w-5 h-5" />
+                  ) : (
+                    <Target className="w-5 h-5" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <p
+                    className={`font-semibold ${isScheduledForToday ? "text-green-700 dark:text-green-300" : "text-orange-700 dark:text-orange-300"}`}
+                  >
+                    {isScheduledForToday ? "In Focus" : "Add to Focus"}
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {isScheduledForToday
+                      ? "This idea is scheduled for today"
+                      : "Start working on this immediately"}
+                  </p>
+                </div>
+                {isScheduling && <Loader2 className="w-4 h-4 animate-spin text-orange-500" />}
+              </div>
+            </div>
+          )}
         </div>
 
         <DrawerFooter>
-          {isEdit && !isScheduledForToday && (
-            <Button
-              onClick={handleScheduleForToday}
-              disabled={isScheduling}
-              variant="secondary"
-              className="gap-2"
-            >
-              {isScheduling ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Calendar className="w-4 h-4" />
-              )}
-              {isScheduling ? "Scheduling..." : "Schedule for Today"}
-            </Button>
-          )}
           <Button onClick={handleSubmit} disabled={isLoading}>
             {isLoading ? "Saving..." : isEdit ? "Save Changes" : "Create Idea"}
           </Button>
