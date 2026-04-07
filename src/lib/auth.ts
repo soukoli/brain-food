@@ -10,14 +10,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     strategy: "jwt",
   },
   callbacks: {
-    async jwt({ token, user, profile }) {
-      // On sign-in, persist user info into the token
+    async jwt({ token, user, profile, account }) {
+      // On sign-in, persist user info and tokens into the JWT
       if (user) {
         token.id = user.id;
         token.name = user.name;
         token.email = user.email;
         token.image = user.image;
       }
+
+      // Capture Google OAuth tokens for Google Drive access
+      if (account?.provider === "google") {
+        token.accessToken = account.access_token;
+        token.refreshToken = account.refresh_token;
+        token.accessTokenExpires = account.expires_at ? account.expires_at * 1000 : 0;
+      }
+
       // Also capture from Google profile if available
       if (profile?.sub && !token.id) {
         token.id = profile.sub;
@@ -25,6 +33,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.email = profile.email;
         token.image = (profile as { picture?: string })?.picture;
       }
+
       return token;
     },
     async session({ session, token }) {
@@ -35,6 +44,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (token.email) session.user.email = token.email as string;
         if (token.image) session.user.image = token.image as string;
       }
+
+      // Pass tokens to session for Google Drive API access
+      session.accessToken = token.accessToken as string | undefined;
+      session.refreshToken = token.refreshToken as string | undefined;
+      session.accessTokenExpires = token.accessTokenExpires as number | undefined;
+
       return session;
     },
   },
@@ -49,5 +64,8 @@ declare module "next-auth" {
       email?: string | null;
       image?: string | null;
     };
+    accessToken?: string;
+    refreshToken?: string;
+    accessTokenExpires?: number;
   }
 }

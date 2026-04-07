@@ -11,6 +11,16 @@ export default {
     Google({
       clientId: process.env.AUTH_GOOGLE_ID,
       clientSecret: process.env.AUTH_GOOGLE_SECRET,
+      authorization: {
+        params: {
+          // Request offline access to get refresh token
+          access_type: "offline",
+          prompt: "consent",
+          // Request Google Drive appdata scope for backup storage
+          // This only allows access to app-specific folder, not user's files
+          scope: "openid email profile https://www.googleapis.com/auth/drive.appdata",
+        },
+      },
     }),
     // Development-only credentials provider for testing
     ...(process.env.NODE_ENV === "development"
