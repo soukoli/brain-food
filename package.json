@@ -17,10 +17,12 @@
     "docker:reset": "docker-compose down -v && docker-compose up -d",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "db:migrate:prod": "tsx scripts/migrate-prod.ts",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx src/lib/db/seed.ts",
     "db:reset": "npm run docker:reset && sleep 3 && npm run db:push && npm run db:seed",
+    "db:status": "tsx scripts/db-status.ts",
     "cap:sync": "npx cap sync",
     "cap:open:ios": "npx cap open ios",
     "cap:build": "npm run build && npx cap sync"
