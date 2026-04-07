@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getDbAsync } from "@/lib/db";
 import { projects, ideas } from "@/lib/db/schema";
 import { eq, desc, count } from "drizzle-orm";
-import { getRequiredUser } from "@/lib/auth-utils";
+import { getRequiredUser, ensureUserInDb } from "@/lib/auth-utils";
 import { createProjectSchema } from "@/lib/validations";
 import { PROJECT_COLORS } from "@/lib/constants";
 
@@ -36,10 +36,7 @@ export async function GET() {
     return NextResponse.json({ data: projectsWithCount });
   } catch (error) {
     console.error("Error fetching projects:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch projects" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch projects" }, { status: 500 });
   }
 }
 
@@ -48,6 +45,9 @@ export async function POST(request: Request) {
   try {
     const user = await getRequiredUser();
     const db = await getDbAsync();
+
+    // Ensure user exists in database before creating project
+    await ensureUserInDb(user);
 
     const body = await request.json();
     const validatedData = createProjectSchema.parse(body);
@@ -75,9 +75,6 @@ export async function POST(request: Request) {
     if (error instanceof Error && error.name === "ZodError") {
       return NextResponse.json({ error: "Invalid project data" }, { status: 400 });
     }
-    return NextResponse.json(
-      { error: "Failed to create project" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to create project" }, { status: 500 });
   }
 }

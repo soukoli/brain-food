@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getDbAsync } from "@/lib/db";
 import { ideas } from "@/lib/db/schema";
 import { eq, desc, and, isNotNull, gte, lt } from "drizzle-orm";
-import { getRequiredUser } from "@/lib/auth-utils";
+import { getRequiredUser, ensureUserInDb } from "@/lib/auth-utils";
 import { createIdeaSchema } from "@/lib/validations";
 
 export const dynamic = "force-dynamic";
@@ -26,7 +26,9 @@ export async function GET(request: Request) {
     }
 
     if (status) {
-      conditions.push(eq(ideas.status, status as "inbox" | "in-progress" | "completed" | "archived" | "deleted"));
+      conditions.push(
+        eq(ideas.status, status as "inbox" | "in-progress" | "completed" | "archived" | "deleted")
+      );
     }
 
     if (scheduledForToday) {
@@ -34,7 +36,7 @@ export async function GET(request: Request) {
       today.setHours(0, 0, 0, 0);
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
-      
+
       conditions.push(isNotNull(ideas.scheduledForToday));
       conditions.push(gte(ideas.scheduledForToday, today));
       conditions.push(lt(ideas.scheduledForToday, tomorrow));
@@ -49,10 +51,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ data: ideasList });
   } catch (error) {
     console.error("Error fetching ideas:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch ideas" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch ideas" }, { status: 500 });
   }
 }
 
@@ -61,6 +60,9 @@ export async function POST(request: Request) {
   try {
     const user = await getRequiredUser();
     const db = await getDbAsync();
+
+    // Ensure user exists in database before creating idea
+    await ensureUserInDb(user);
 
     const body = await request.json();
     const validatedData = createIdeaSchema.parse(body);
@@ -85,9 +87,6 @@ export async function POST(request: Request) {
     if (error instanceof Error && error.name === "ZodError") {
       return NextResponse.json({ error: "Invalid idea data" }, { status: 400 });
     }
-    return NextResponse.json(
-      { error: "Failed to create idea" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to create idea" }, { status: 500 });
   }
 }

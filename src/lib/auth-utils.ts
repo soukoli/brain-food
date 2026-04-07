@@ -1,5 +1,36 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { getDbAsync } from "@/lib/db";
+import { users } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
+
+/**
+ * Ensure user exists in database, create if not
+ * Call this before any database operation that requires user_id foreign key
+ */
+export async function ensureUserInDb(user: {
+  id: string;
+  name?: string | null;
+  email?: string | null;
+  image?: string | null;
+}): Promise<void> {
+  const db = await getDbAsync();
+
+  // Check if user exists
+  const existingUser = await db.query.users.findFirst({
+    where: eq(users.id, user.id),
+  });
+
+  if (!existingUser) {
+    // Create new user
+    await db.insert(users).values({
+      id: user.id,
+      name: user.name || null,
+      email: user.email || null,
+      image: user.image || null,
+    });
+  }
+}
 
 /**
  * Get the currently authenticated user or redirect to login
