@@ -1,11 +1,21 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Block, BlockTitle } from "@/components/ui/block";
-import { Zap, Calendar, FolderOpen, Inbox, ChevronRight, Target } from "lucide-react";
+import {
+  Zap,
+  Calendar,
+  FolderOpen,
+  Inbox,
+  ChevronRight,
+  Target,
+  Quote,
+  RefreshCw,
+} from "lucide-react";
 import { toast } from "sonner";
 import type { IdeaWithProject, DashboardStats } from "@/types";
 
@@ -14,8 +24,35 @@ interface DashboardClientProps {
   recentIdeas: IdeaWithProject[];
 }
 
+interface QuoteData {
+  quote: string;
+  author: string;
+}
+
 export function DashboardClient({ stats, recentIdeas }: DashboardClientProps) {
   const router = useRouter();
+  const [quote, setQuote] = useState<QuoteData | null>(null);
+  const [isLoadingQuote, setIsLoadingQuote] = useState(true);
+
+  // Fetch quote on mount
+  useEffect(() => {
+    fetchQuote();
+  }, []);
+
+  const fetchQuote = async () => {
+    setIsLoadingQuote(true);
+    try {
+      const response = await fetch("/api/quote");
+      if (response.ok) {
+        const { data } = await response.json();
+        setQuote(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch quote:", error);
+    } finally {
+      setIsLoadingQuote(false);
+    }
+  };
 
   const handleScheduleForFocus = async (idea: IdeaWithProject, e: React.MouseEvent) => {
     e.preventDefault();
@@ -48,10 +85,44 @@ export function DashboardClient({ stats, recentIdeas }: DashboardClientProps) {
 
   return (
     <div className="pb-4">
-      {/* Header */}
+      {/* Inspirational Quote */}
       <Block className="!mt-0 !mb-4">
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">Welcome back</h1>
-        <p className="text-slate-500 dark:text-slate-400 mt-1">What will you accomplish today?</p>
+        <Card className="p-5 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-indigo-950/40 dark:via-purple-950/40 dark:to-pink-950/40 border-none shadow-sm">
+          <div className="flex items-start gap-3">
+            <div className="shrink-0 mt-1">
+              <Quote className="w-6 h-6 text-indigo-400 dark:text-indigo-500" />
+            </div>
+            <div className="flex-1 min-w-0">
+              {isLoadingQuote ? (
+                <div className="space-y-2 animate-pulse">
+                  <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4"></div>
+                  <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/2"></div>
+                  <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-1/4 mt-3"></div>
+                </div>
+              ) : quote ? (
+                <>
+                  <p className="text-base font-medium text-slate-800 dark:text-slate-200 italic leading-relaxed">
+                    &ldquo;{quote.quote}&rdquo;
+                  </p>
+                  <p className="mt-2 text-sm font-semibold text-indigo-600 dark:text-indigo-400">
+                    — {quote.author}
+                  </p>
+                </>
+              ) : (
+                <p className="text-sm text-slate-500">Start your day with purpose</p>
+              )}
+            </div>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="shrink-0 h-8 w-8 text-slate-400 hover:text-indigo-500"
+              onClick={fetchQuote}
+              disabled={isLoadingQuote}
+            >
+              <RefreshCw className={`w-4 h-4 ${isLoadingQuote ? "animate-spin" : ""}`} />
+            </Button>
+          </div>
+        </Card>
       </Block>
 
       {/* Quick Actions */}
