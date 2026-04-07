@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { TaskTimerCard } from "@/components/focus/TaskTimerCard";
@@ -7,8 +9,9 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Block, BlockTitle } from "@/components/ui/block";
-import { Target, CheckCircle2, Clock, ArrowRight, Zap } from "lucide-react";
+import { Target, CheckCircle2, Clock, ArrowRight, Zap, RotateCcw } from "lucide-react";
 import { formatTime } from "@/lib/utils";
+import { toast } from "sonner";
 import type { IdeaWithProject } from "@/types";
 
 interface FocusClientProps {
@@ -17,6 +20,33 @@ interface FocusClientProps {
 }
 
 export function FocusClient({ activeTasks, completedToday }: FocusClientProps) {
+  const router = useRouter();
+  const [reopeningId, setReopeningId] = useState<string | null>(null);
+
+  const handleReopenTask = async (task: IdeaWithProject) => {
+    setReopeningId(task.id);
+    try {
+      const response = await fetch(`/api/ideas/${task.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "in-progress",
+          // Keep scheduledForToday so it stays in Focus
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to reopen task");
+      }
+
+      toast.success("Task reopened");
+      router.refresh();
+    } catch {
+      toast.error("Failed to reopen task");
+    } finally {
+      setReopeningId(null);
+    }
+  };
   const totalTimeToday = completedToday.reduce((acc, idea) => acc + idea.timeSpentSeconds, 0);
 
   const runningTask = activeTasks.find((task) => task.isTimerRunning);
@@ -103,32 +133,45 @@ export function FocusClient({ activeTasks, completedToday }: FocusClientProps) {
             </div>
           </BlockTitle>
           <Block className="space-y-2">
-            {completedToday.map((task) => (
-              <Card
-                key={task.id}
-                className="p-3 bg-green-50 dark:bg-green-900/20 border-green-100 dark:border-green-900"
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-1 h-8 rounded-full shrink-0"
-                    style={{ backgroundColor: task.project?.color ?? "#94a3b8" }}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-slate-900 dark:text-slate-50 truncate">
-                      {task.title}
-                    </p>
-                    {task.project && (
-                      <p className="text-xs font-medium" style={{ color: task.project.color }}>
-                        {task.project.name}
+            {completedToday.map((task) => {
+              const isReopening = reopeningId === task.id;
+              return (
+                <Card
+                  key={task.id}
+                  className="p-3 bg-green-50 dark:bg-green-900/20 border-green-100 dark:border-green-900"
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-1 h-8 rounded-full shrink-0"
+                      style={{ backgroundColor: task.project?.color ?? "#94a3b8" }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-slate-900 dark:text-slate-50 truncate">
+                        {task.title}
                       </p>
-                    )}
+                      {task.project && (
+                        <p className="text-xs font-medium" style={{ color: task.project.color }}>
+                          {task.project.name}
+                        </p>
+                      )}
+                    </div>
+                    <Badge variant="success" className="shrink-0">
+                      {formatTime(task.timeSpentSeconds)}
+                    </Badge>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8 text-slate-400 hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-950"
+                      onClick={() => handleReopenTask(task)}
+                      disabled={isReopening}
+                      title="Reopen task"
+                    >
+                      <RotateCcw className={`w-4 h-4 ${isReopening ? "animate-spin" : ""}`} />
+                    </Button>
                   </div>
-                  <Badge variant="success" className="shrink-0">
-                    {formatTime(task.timeSpentSeconds)}
-                  </Badge>
-                </div>
-              </Card>
-            ))}
+                </Card>
+              );
+            })}
           </Block>
         </>
       )}

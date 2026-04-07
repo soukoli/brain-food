@@ -53,6 +53,25 @@ export function TaskTimerCard({ idea }: TaskTimerCardProps) {
     setIsRunning,
   ]);
 
+  const handleUndoComplete = async () => {
+    try {
+      const response = await fetch(`/api/ideas/${idea.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "in-progress" }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to undo");
+      }
+
+      toast.success("Task reopened");
+      router.refresh();
+    } catch {
+      toast.error("Failed to undo completion");
+    }
+  };
+
   const handleTimerAction = async (action: "start" | "pause" | "complete") => {
     setIsUpdating(true);
 
@@ -69,7 +88,14 @@ export function TaskTimerCard({ idea }: TaskTimerCardProps) {
       }
 
       if (action === "complete") {
-        toast.success("Task completed!");
+        // Show toast with Undo button for accidental completions
+        toast.success("Task completed!", {
+          action: {
+            label: "Undo",
+            onClick: handleUndoComplete,
+          },
+          duration: 5000, // 5 seconds to undo
+        });
       }
 
       router.refresh();
