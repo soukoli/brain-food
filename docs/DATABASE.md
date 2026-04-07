@@ -7,6 +7,34 @@ This project uses [Drizzle ORM](https://orm.drizzle.team/) with PostgreSQL.
 - **Local Development**: Docker PostgreSQL on port 5433
 - **Production**: Neon Serverless Postgres (via Vercel integration)
 
+## How Migrations Work
+
+### Automatic (Recommended)
+
+**Migrations run automatically during Vercel deployment.**
+
+When you push to GitHub:
+
+1. Vercel triggers a build
+2. `npm run build` runs `scripts/migrate.ts` first
+3. Pending migrations are applied to Neon database
+4. Then Next.js builds the app
+
+This ensures your database schema is always in sync with your code.
+
+### Manual (For Testing)
+
+You can also run migrations manually:
+
+```bash
+# Apply to local database
+npm run db:migrate
+
+# Apply to production (requires .env.production)
+vercel env pull .env.production
+npm run db:migrate:prod
+```
+
 ## Quick Reference
 
 ```bash
@@ -19,7 +47,7 @@ npm run db:generate
 # Apply migrations to LOCAL database
 npm run db:migrate
 
-# Apply migrations to PRODUCTION database
+# Apply migrations to PRODUCTION database (manual)
 npm run db:migrate:prod
 
 # Quick sync for development (skips migrations)
@@ -27,11 +55,14 @@ npm run db:push
 
 # Open Drizzle Studio (GUI)
 npm run db:studio
+
+# Local build without migrations
+npm run build:local
 ```
 
 ## Workflow
 
-### 1. Making Schema Changes
+### 1. Make Schema Changes
 
 Edit `src/lib/db/schema.ts`:
 
@@ -61,45 +92,20 @@ drizzle/
 
 ### 3. Review Migration
 
-Always review the generated SQL before applying:
+Always review the generated SQL:
 
 ```bash
 cat drizzle/0001_*.sql
 ```
 
-### 4. Apply to Local Database
+### 4. Apply Locally & Test
 
 ```bash
-npm run db:migrate
+npm run db:migrate    # Apply to local DB
+npm run dev           # Test the app
 ```
 
-### 5. Test Your Changes
-
-Run the app and verify everything works:
-
-```bash
-npm run dev
-```
-
-### 6. Apply to Production
-
-After testing locally, deploy to production:
-
-```bash
-# First, pull production credentials
-vercel env pull .env.production
-
-# Then run production migration
-npm run db:migrate:prod
-```
-
-The script will:
-
-- Show connection info
-- Ask for confirmation (it's production!)
-- Apply pending migrations
-
-### 7. Commit & Deploy
+### 5. Commit & Deploy
 
 ```bash
 git add drizzle/
@@ -107,64 +113,68 @@ git commit -m "feat: add archived column to projects"
 git push origin main
 ```
 
+**That's it!** Vercel will automatically:
+
+1. Run migrations on Neon
+2. Build and deploy the app
+
 ## Commands Explained
 
-| Command           | Description                                    | When to Use             |
-| ----------------- | ---------------------------------------------- | ----------------------- |
-| `db:generate`     | Creates SQL migration file from schema changes | After editing schema.ts |
-| `db:migrate`      | Applies pending migrations to database         | Before testing changes  |
-| `db:migrate:prod` | Applies migrations to production (Neon)        | After testing locally   |
-| `db:push`         | Syncs schema directly (no migration file)      | Quick prototyping only  |
-| `db:status`       | Shows database info and applied migrations     | Debugging               |
-| `db:studio`       | Opens GUI to browse database                   | Exploring data          |
-| `db:reset`        | Resets local Docker database                   | Starting fresh          |
+| Command           | Description                            | When to Use             |
+| ----------------- | -------------------------------------- | ----------------------- |
+| `db:generate`     | Creates SQL migration file from schema | After editing schema.ts |
+| `db:migrate`      | Applies migrations to local database   | Testing locally         |
+| `db:migrate:prod` | Applies migrations to Neon (manual)    | Emergency/debugging     |
+| `db:push`         | Syncs schema directly (no migration)   | Quick prototyping only  |
+| `db:status`       | Shows database info and migrations     | Debugging               |
+| `db:studio`       | Opens GUI to browse database           | Exploring data          |
+| `db:reset`        | Resets local Docker database           | Starting fresh          |
+| `build:local`     | Build without running migrations       | Local testing           |
 
 ## Important Notes
 
 ### ⚠️ db:push vs db:migrate
 
-- **`db:push`**: Fast, but dangerous. Directly modifies database without migration files. **Never use in production.**
-- **`db:migrate`**: Safe. Uses versioned migration files. **Always use for production.**
+- **`db:push`**: Fast, but dangerous. Directly modifies database. **Never use in production.**
+- **`db:migrate`**: Safe. Uses versioned SQL files. **Always use for production.**
 
-### Migration Files
+### Migration Files Are Immutable
 
-- Migration files in `drizzle/` are **immutable** - never edit them after applying
-- They are versioned and applied in order
-- Each migration runs only once (tracked in `__drizzle_migrations` table)
+- Never edit migration files after they're applied
+- They run in order (0000, 0001, 0002...)
+- Each runs only once (tracked in `__drizzle_migrations` table)
 
 ### Rolling Back
 
-Drizzle doesn't have automatic rollback. To undo a migration:
+Drizzle doesn't auto-rollback. To undo:
 
-1. Create a new migration that reverses the changes
-2. Or restore from database backup
+1. Create a new migration that reverses changes
+2. Or restore from database backup (Neon has point-in-time recovery)
 
-### Production Safety
+### Skipping Migrations
 
-The `db:migrate:prod` script:
-
-- Detects production databases (Neon, Supabase, AWS)
-- Shows warning and requires confirmation
-- Uses secure SSL connection
+Set `SKIP_MIGRATIONS=true` in Vercel env vars to disable auto-migrations.
 
 ## Troubleshooting
 
+### "No DATABASE_URL found"
+
+Expected for local development. Use `db:migrate` directly or set up `.env.local`.
+
 ### "Migration table not found"
 
-Database was created with `db:push`. Migrations will start tracking from now on.
+Database was created with `db:push`. Migrations will start tracking from now.
 
 ### "Connection refused"
 
-For local: Make sure Docker is running:
+For local, make sure Docker is running:
 
 ```bash
 npm run docker:up
 ```
 
-### "SSL required"
+### Migration Failed on Vercel
 
-Production databases require SSL. The migration script handles this automatically.
-
-### "Permission denied"
-
-Check your database credentials in `.env.local` or `.env.production`.
+1. Check Vercel build logs
+2. Run `npm run db:migrate:prod` manually to see detailed error
+3. Fix the issue and redeploy
