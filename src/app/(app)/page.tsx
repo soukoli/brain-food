@@ -19,7 +19,7 @@ export default async function DashboardPage() {
   tomorrow.setDate(tomorrow.getDate() + 1);
 
   // Parallel queries for stats
-  const [projectCountResult, todayCountResult, inboxCountResult, inProgressCountResult, recentIdeas] =
+  const [projectCountResult, todayCountResult, totalIdeasResult, inProgressCountResult, recentIdeas] =
     await Promise.all([
       // Count of projects
       db.select({ value: count() }).from(projects).where(eq(projects.userId, user.id)),
@@ -37,11 +37,16 @@ export default async function DashboardPage() {
           )
         ),
 
-      // Count of inbox tasks
+      // Count of total ideas (not deleted/archived)
       db
         .select({ value: count() })
         .from(ideas)
-        .where(and(eq(ideas.userId, user.id), eq(ideas.status, "inbox"))),
+        .where(
+          and(
+            eq(ideas.userId, user.id),
+            // Exclude deleted and archived
+          )
+        ),
 
       // Count of in-progress tasks
       db
@@ -51,7 +56,7 @@ export default async function DashboardPage() {
 
       // 5 most recent ideas with project info
       db.query.ideas.findMany({
-        where: and(eq(ideas.userId, user.id), eq(ideas.status, "inbox")),
+        where: eq(ideas.userId, user.id),
         with: { project: true },
         orderBy: [desc(ideas.createdAt)],
         limit: 5,
@@ -68,7 +73,7 @@ export default async function DashboardPage() {
         stats={{
           projectCount: projectCountResult[0]?.value ?? 0,
           todayCount: todayCountResult[0]?.value ?? 0,
-          inboxCount: inboxCountResult[0]?.value ?? 0,
+          totalIdeas: totalIdeasResult[0]?.value ?? 0,
           inProgressCount: inProgressCountResult[0]?.value ?? 0,
         }}
         recentIdeas={recentIdeas}

@@ -27,7 +27,7 @@ export interface ProjectWithIdeas extends Project {
 export interface DashboardStats {
   projectCount: number;
   todayCount: number;
-  inboxCount: number;
+  totalIdeas: number;
   inProgressCount: number;
 }
 

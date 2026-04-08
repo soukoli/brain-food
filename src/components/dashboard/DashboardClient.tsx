@@ -10,7 +10,7 @@ import {
   Zap,
   Calendar,
   FolderOpen,
-  Inbox,
+  Lightbulb,
   ChevronRight,
   Target,
   Quote,
@@ -181,12 +181,12 @@ export function DashboardClient({ stats, recentIdeas }: DashboardClientProps) {
 
           <Card className="p-4">
             <div className="flex items-center gap-2 mb-1">
-              <Inbox className="h-4 w-4 text-slate-500" />
+              <Lightbulb className="h-4 w-4 text-amber-500" />
             </div>
-            <p className="text-2xl font-bold text-slate-900 dark:text-slate-50">
-              {stats.inboxCount}
+            <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+              {stats.totalIdeas}
             </p>
-            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">Inbox</p>
+            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">Ideas</p>
           </Card>
         </div>
       </Block>
@@ -196,7 +196,7 @@ export function DashboardClient({ stats, recentIdeas }: DashboardClientProps) {
       <Block className="!mt-2">
         {recentIdeas.length === 0 ? (
           <Card className="p-8 text-center">
-            <Inbox className="h-10 w-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+            <Lightbulb className="h-10 w-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
             <p className="text-slate-600 dark:text-slate-400">
               No ideas yet. Capture your first thought!
             </p>
