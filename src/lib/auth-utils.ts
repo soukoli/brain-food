@@ -36,24 +36,28 @@ export async function ensureUserInDb(user: {
     });
 
     if (existingByEmail) {
-      // User exists with old ID - migrate all data to new ID
+      // User exists with old ID - need to migrate to new ID
       const oldId = existingByEmail.id;
       const newId = user.id;
 
-      // Update all foreign key references
+      // Step 1: Create new user record first (so FK references work)
+      await db.insert(users).values({
+        id: newId,
+        name: user.name || existingByEmail.name,
+        email: null, // Temporarily null to avoid unique constraint
+        image: user.image || existingByEmail.image,
+      });
+
+      // Step 2: Update all foreign key references to new user
       await db.update(projects).set({ userId: newId }).where(eq(projects.userId, oldId));
       await db.update(ideas).set({ userId: newId }).where(eq(ideas.userId, oldId));
       await db.update(tags).set({ userId: newId }).where(eq(tags.userId, oldId));
 
-      // Update the user record with new ID
-      await db
-        .update(users)
-        .set({
-          id: newId,
-          name: user.name || existingByEmail.name,
-          image: user.image || existingByEmail.image,
-        })
-        .where(eq(users.email, user.email));
+      // Step 3: Delete old user record
+      await db.delete(users).where(eq(users.id, oldId));
+
+      // Step 4: Update new user with email
+      await db.update(users).set({ email: user.email }).where(eq(users.id, newId));
 
       return;
     }
