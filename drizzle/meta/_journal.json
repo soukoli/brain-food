@@ -15,6 +15,13 @@
       "when": 1775553313557,
       "tag": "0001_fuzzy_sinister_six",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1775645287808,
+      "tag": "0002_cold_captain_cross",
+      "breakpoints": true
     }
   ]
 }

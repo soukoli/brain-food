@@ -11,7 +11,9 @@ export const projectSchema = z.object({
 
 export const createProjectSchema = projectSchema;
 
-export const updateProjectSchema = projectSchema.partial();
+export const updateProjectSchema = projectSchema.partial().extend({
+  sortOrder: z.number().int().min(0).optional(),
+});
 
 /**
  * Idea validation schema

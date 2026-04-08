@@ -83,6 +83,7 @@ export const projects = pgTable(
       .default("active")
       .notNull()
       .$type<"active" | "archived" | "completed">(),
+    sortOrder: integer("sort_order").default(0).notNull(),
     userId: text("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
@@ -90,8 +91,8 @@ export const projects = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => ({
-    // Index for listing user's projects sorted by creation date
-    userIdCreatedAtIdx: index("projects_user_id_created_at_idx").on(table.userId, table.createdAt),
+    // Index for listing user's projects sorted by sort order
+    userIdSortOrderIdx: index("projects_user_id_sort_order_idx").on(table.userId, table.sortOrder),
   })
 );
 

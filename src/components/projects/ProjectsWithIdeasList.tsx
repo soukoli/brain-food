@@ -21,6 +21,7 @@ import {
   X,
   AlertCircle,
   ArrowUp,
+  ArrowDown,
   Flame,
   Inbox,
 } from "lucide-react";
@@ -61,10 +62,14 @@ export function ProjectsWithIdeasList({ projects, orphanIdeas = [] }: ProjectsWi
   const router = useRouter();
   const [schedulingId, setSchedulingId] = useState<string | null>(null);
   const [removingFromFocusId, setRemovingFromFocusId] = useState<string | null>(null);
-  // Track collapsed state per project (default: expanded)
-  const [collapsedProjects, setCollapsedProjects] = useState<Set<string>>(new Set());
-  // Track collapsed state for Quick Ideas section
-  const [quickIdeasCollapsed, setQuickIdeasCollapsed] = useState(false);
+  // Track collapsed state per project (default: ALL collapsed)
+  const [collapsedProjects, setCollapsedProjects] = useState<Set<string>>(
+    () => new Set(projects.map(p => p.id))
+  );
+  // Track collapsed state for Quick Ideas section (collapsed by default)
+  const [quickIdeasCollapsed, setQuickIdeasCollapsed] = useState(true);
+  // Track if we're currently reordering
+  const [isReordering, setIsReordering] = useState(false);
 
   const toggleProjectCollapse = (projectId: string, e: React.MouseEvent) => {
     e.preventDefault();
@@ -78,6 +83,40 @@ export function ProjectsWithIdeasList({ projects, orphanIdeas = [] }: ProjectsWi
       }
       return newSet;
     });
+  };
+
+  const handleReorderProjects = async (projectId: string, direction: "up" | "down") => {
+    const currentIndex = projects.findIndex(p => p.id === projectId);
+    if (currentIndex === -1) return;
+    
+    const newIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+    if (newIndex < 0 || newIndex >= projects.length) return;
+
+    setIsReordering(true);
+    try {
+      // Get the project we're swapping with
+      const otherProject = projects[newIndex];
+      
+      // Swap sort orders
+      await Promise.all([
+        fetch(`/api/projects/${projectId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sortOrder: newIndex }),
+        }),
+        fetch(`/api/projects/${otherProject.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sortOrder: currentIndex }),
+        }),
+      ]);
+
+      router.refresh();
+    } catch {
+      toast.error("Failed to reorder projects");
+    } finally {
+      setIsReordering(false);
+    }
   };
 
   const handleDeleteIdea = async (ideaId: string) => {
@@ -329,60 +368,16 @@ export function ProjectsWithIdeasList({ projects, orphanIdeas = [] }: ProjectsWi
 
   return (
     <Block className="space-y-4">
-      {/* Quick Ideas / Uncategorized section - show at top if there are orphan ideas */}
-      {sortedOrphanIdeas.length > 0 && (
-        <div>
-          <Card
-            className="p-4 hover:shadow-md transition-all border-l-4 cursor-pointer border-l-slate-400 bg-slate-50 dark:bg-slate-900"
-            onClick={() => setQuickIdeasCollapsed(!quickIdeasCollapsed)}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="shrink-0 text-slate-400">
-                  {quickIdeasCollapsed ? (
-                    <ChevronRight className="w-5 h-5" />
-                  ) : (
-                    <ChevronDown className="w-5 h-5" />
-                  )}
-                </div>
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-slate-200 dark:bg-slate-700">
-                  <Inbox className="w-5 h-5 text-slate-500" />
-                </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-lg text-slate-900 dark:text-slate-50 truncate">
-                      Quick Ideas
-                    </h3>
-                  </div>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
-                    Ideas without a project - tap to assign
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <Badge variant="secondary" className="bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
-                  {sortedOrphanIdeas.length}
-                </Badge>
-              </div>
-            </div>
-          </Card>
-
-          {!quickIdeasCollapsed && (
-            <div className="ml-4 mt-2 space-y-2">
-              {sortedOrphanIdeas.map((idea) => renderIdeaCard(idea, "#94a3b8", projects))}
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Regular projects */}
-      {projects.map((project) => {
+      {projects.map((project, index) => {
         const isCollapsed = collapsedProjects.has(project.id);
         const sortedIdeas = sortIdeasByPriority(project.ideas);
         const hasUrgent = sortedIdeas.some((i) => i.priority === "urgent");
         const focusCount = sortedIdeas.filter(
           (i) => i.scheduledForToday && i.status !== "completed"
         ).length;
+        const canMoveUp = index > 0;
+        const canMoveDown = index < projects.length - 1;
 
         return (
           <div key={project.id}>
@@ -394,6 +389,27 @@ export function ProjectsWithIdeasList({ projects, orphanIdeas = [] }: ProjectsWi
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3 min-w-0">
+                  {/* Reorder buttons */}
+                  <div className="flex flex-col shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-5 w-5 text-slate-300 hover:text-slate-500 disabled:opacity-30"
+                      onClick={() => handleReorderProjects(project.id, "up")}
+                      disabled={!canMoveUp || isReordering}
+                    >
+                      <ArrowUp className="w-3 h-3" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-5 w-5 text-slate-300 hover:text-slate-500 disabled:opacity-30"
+                      onClick={() => handleReorderProjects(project.id, "down")}
+                      disabled={!canMoveDown || isReordering}
+                    >
+                      <ArrowDown className="w-3 h-3" />
+                    </Button>
+                  </div>
                   {/* Collapse/Expand indicator */}
                   <div className="shrink-0 text-slate-400">
                     {isCollapsed ? (
@@ -488,6 +504,52 @@ export function ProjectsWithIdeasList({ projects, orphanIdeas = [] }: ProjectsWi
           </div>
         );
       })}
+
+      {/* Quick Ideas / Uncategorized section - at the bottom */}
+      {sortedOrphanIdeas.length > 0 && (
+        <div>
+          <Card
+            className="p-4 hover:shadow-md transition-all border-l-4 cursor-pointer border-l-slate-400 bg-slate-50 dark:bg-slate-900"
+            onClick={() => setQuickIdeasCollapsed(!quickIdeasCollapsed)}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="shrink-0 text-slate-400">
+                  {quickIdeasCollapsed ? (
+                    <ChevronRight className="w-5 h-5" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5" />
+                  )}
+                </div>
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-slate-200 dark:bg-slate-700">
+                  <Inbox className="w-5 h-5 text-slate-500" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-bold text-lg text-slate-900 dark:text-slate-50 truncate">
+                      Quick Ideas
+                    </h3>
+                  </div>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
+                    Ideas without a project - tap to assign
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <Badge variant="secondary" className="bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                  {sortedOrphanIdeas.length}
+                </Badge>
+              </div>
+            </div>
+          </Card>
+
+          {!quickIdeasCollapsed && (
+            <div className="ml-4 mt-2 space-y-2">
+              {sortedOrphanIdeas.map((idea) => renderIdeaCard(idea, "#94a3b8", projects))}
+            </div>
+          )}
+        </div>
+      )}
     </Block>
   );
 }

@@ -1,6 +1,6 @@
 import { getDbAsync } from "@/lib/db";
 import { projects, ideas } from "@/lib/db/schema";
-import { eq, desc, isNull, and } from "drizzle-orm";
+import { eq, desc, isNull, and, asc } from "drizzle-orm";
 import { getRequiredUser } from "@/lib/auth-utils";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ProjectsWithIdeasList } from "@/components/projects/ProjectsWithIdeasList";
@@ -14,7 +14,7 @@ export default async function ProjectsPage() {
   const user = await getRequiredUser();
   const db = await getDbAsync();
 
-  // Get projects with their ideas (using relational query)
+  // Get projects with their ideas (using relational query), sorted by sortOrder
   const projectsWithIdeas = await db.query.projects.findMany({
     where: eq(projects.userId, user.id),
     with: {
@@ -22,7 +22,7 @@ export default async function ProjectsPage() {
         orderBy: (ideas, { desc }) => [desc(ideas.createdAt)],
       },
     },
-    orderBy: [desc(projects.createdAt)],
+    orderBy: [asc(projects.sortOrder), desc(projects.createdAt)],
   });
 
   // Get orphan ideas (ideas without a project)
