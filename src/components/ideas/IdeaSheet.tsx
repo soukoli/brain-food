@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -22,9 +23,29 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Target, Loader2, CheckCircle2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+  Target,
+  Loader2,
+  CheckCircle2,
+  Trash2,
+  RotateCcw,
+  Play,
+  Clock,
+} from "lucide-react";
 import { PRIORITIES } from "@/lib/constants";
 import { toast } from "sonner";
+import { formatTime } from "@/lib/utils";
 import type { Idea } from "@/lib/db/schema";
 
 interface IdeaSheetProps {
@@ -39,6 +60,8 @@ export function IdeaSheet({ idea, projectId, trigger, onSuccess }: IdeaSheetProp
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isScheduling, setIsScheduling] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isChangingStatus, setIsChangingStatus] = useState(false);
   const [title, setTitle] = useState(idea?.title ?? "");
   const [description, setDescription] = useState(idea?.description ?? "");
   const [linkUrl, setLinkUrl] = useState(idea?.linkUrl ?? "");
@@ -46,6 +69,8 @@ export function IdeaSheet({ idea, projectId, trigger, onSuccess }: IdeaSheetProp
 
   const isEdit = !!idea;
   const isScheduledForToday = !!idea?.scheduledForToday;
+  const isCompleted = idea?.status === "completed";
+  const isInProgress = idea?.status === "in-progress";
 
   const handleScheduleForToday = async () => {
     if (!idea) return;
@@ -57,6 +82,8 @@ export function IdeaSheet({ idea, projectId, trigger, onSuccess }: IdeaSheetProp
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           scheduledForToday: new Date().toISOString(),
+          // If completed, also reopen it
+          ...(isCompleted && { status: "in-progress" }),
         }),
       });
 
@@ -64,7 +91,7 @@ export function IdeaSheet({ idea, projectId, trigger, onSuccess }: IdeaSheetProp
         throw new Error("Failed to add to Focus");
       }
 
-      toast.success("Added to Focus!");
+      toast.success(isCompleted ? "Reopened and added to Focus!" : "Added to Focus!");
       setOpen(false);
       router.refresh();
       onSuccess?.();
@@ -72,6 +99,56 @@ export function IdeaSheet({ idea, projectId, trigger, onSuccess }: IdeaSheetProp
       toast.error("Failed to add to Focus");
     } finally {
       setIsScheduling(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!idea) return;
+
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/ideas/${idea.id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete idea");
+      }
+
+      toast.success("Idea deleted");
+      setOpen(false);
+      router.refresh();
+      onSuccess?.();
+    } catch {
+      toast.error("Failed to delete idea");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleStatusChange = async (newStatus: "in-progress" | "completed") => {
+    if (!idea) return;
+
+    setIsChangingStatus(true);
+    try {
+      const response = await fetch(`/api/ideas/${idea.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update status");
+      }
+
+      toast.success(newStatus === "completed" ? "Marked as complete!" : "Reopened!");
+      setOpen(false);
+      router.refresh();
+      onSuccess?.();
+    } catch {
+      toast.error("Failed to update status");
+    } finally {
+      setIsChangingStatus(false);
     }
   };
 
@@ -133,13 +210,34 @@ export function IdeaSheet({ idea, projectId, trigger, onSuccess }: IdeaSheetProp
       <DrawerTrigger asChild>{trigger}</DrawerTrigger>
       <DrawerContent>
         <DrawerHeader>
-          <DrawerTitle className="font-bold">{isEdit ? "Edit Idea" : "New Idea"}</DrawerTitle>
-          <DrawerDescription>
-            {isEdit ? "Update your idea" : "Capture a new idea"}
-          </DrawerDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <DrawerTitle className="font-bold">{isEdit ? "Edit Idea" : "New Idea"}</DrawerTitle>
+              <DrawerDescription>
+                {isEdit ? "Update your idea" : "Capture a new idea"}
+              </DrawerDescription>
+            </div>
+            {/* Status badge for existing ideas */}
+            {isEdit && (
+              <Badge
+                variant={isCompleted ? "success" : isInProgress ? "default" : "secondary"}
+                className={isInProgress ? "bg-blue-500" : ""}
+              >
+                {isCompleted ? "Completed" : isInProgress ? "In Progress" : "Inbox"}
+              </Badge>
+            )}
+          </div>
         </DrawerHeader>
 
         <div className="px-4 space-y-4 max-h-[60vh] overflow-y-auto">
+          {/* Time spent indicator for existing ideas */}
+          {isEdit && idea.timeSpentSeconds > 0 && (
+            <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 rounded-lg px-3 py-2">
+              <Clock className="w-4 h-4" />
+              <span>Time spent: <strong>{formatTime(idea.timeSpentSeconds)}</strong></span>
+            </div>
+          )}
+
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
               Title *
@@ -198,44 +296,131 @@ export function IdeaSheet({ idea, projectId, trigger, onSuccess }: IdeaSheetProp
             </Select>
           </div>
 
-          {/* Quick Focus action for existing ideas */}
+          {/* Quick Actions for existing ideas */}
           {isEdit && (
-            <div
-              className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                isScheduledForToday
-                  ? "border-green-500 bg-green-50 dark:bg-green-950"
-                  : "border-orange-200 dark:border-orange-800 hover:border-orange-400"
-              }`}
-              onClick={!isScheduledForToday ? handleScheduleForToday : undefined}
-            >
-              <div className="flex items-center gap-3">
-                <div
-                  className={`p-2 rounded-lg ${
-                    isScheduledForToday
-                      ? "bg-green-500 text-white"
-                      : "bg-orange-100 dark:bg-orange-900 text-orange-600"
-                  }`}
-                >
-                  {isScheduledForToday ? (
-                    <CheckCircle2 className="w-5 h-5" />
-                  ) : (
-                    <Target className="w-5 h-5" />
-                  )}
-                </div>
-                <div className="flex-1">
-                  <p
-                    className={`font-semibold ${isScheduledForToday ? "text-green-700 dark:text-green-300" : "text-orange-700 dark:text-orange-300"}`}
+            <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Quick Actions
+              </label>
+              
+              <div className="grid grid-cols-2 gap-2">
+                {/* Add to Focus / Reopen & Focus */}
+                {!isScheduledForToday && (
+                  <Button
+                    variant="outline"
+                    className="h-auto py-3 flex-col gap-1 border-orange-200 hover:bg-orange-50 hover:border-orange-400 dark:border-orange-800 dark:hover:bg-orange-950"
+                    onClick={handleScheduleForToday}
+                    disabled={isScheduling}
                   >
-                    {isScheduledForToday ? "In Focus" : "Add to Focus"}
-                  </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    {isScheduledForToday
-                      ? "This idea is scheduled for today"
-                      : "Start working on this immediately"}
-                  </p>
-                </div>
-                {isScheduling && <Loader2 className="w-4 h-4 animate-spin text-orange-500" />}
+                    {isScheduling ? (
+                      <Loader2 className="w-5 h-5 animate-spin text-orange-500" />
+                    ) : (
+                      <Target className="w-5 h-5 text-orange-500" />
+                    )}
+                    <span className="text-xs text-orange-600 dark:text-orange-400">
+                      {isCompleted ? "Reopen & Focus" : "Add to Focus"}
+                    </span>
+                  </Button>
+                )}
+
+                {/* Mark Complete (if not completed) */}
+                {!isCompleted && (
+                  <Button
+                    variant="outline"
+                    className="h-auto py-3 flex-col gap-1 border-green-200 hover:bg-green-50 hover:border-green-400 dark:border-green-800 dark:hover:bg-green-950"
+                    onClick={() => handleStatusChange("completed")}
+                    disabled={isChangingStatus}
+                  >
+                    {isChangingStatus ? (
+                      <Loader2 className="w-5 h-5 animate-spin text-green-500" />
+                    ) : (
+                      <CheckCircle2 className="w-5 h-5 text-green-500" />
+                    )}
+                    <span className="text-xs text-green-600 dark:text-green-400">
+                      Mark Complete
+                    </span>
+                  </Button>
+                )}
+
+                {/* Reopen (if completed and already in focus) */}
+                {isCompleted && isScheduledForToday && (
+                  <Button
+                    variant="outline"
+                    className="h-auto py-3 flex-col gap-1 border-blue-200 hover:bg-blue-50 hover:border-blue-400 dark:border-blue-800 dark:hover:bg-blue-950"
+                    onClick={() => handleStatusChange("in-progress")}
+                    disabled={isChangingStatus}
+                  >
+                    {isChangingStatus ? (
+                      <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
+                    ) : (
+                      <RotateCcw className="w-5 h-5 text-blue-500" />
+                    )}
+                    <span className="text-xs text-blue-600 dark:text-blue-400">
+                      Reopen
+                    </span>
+                  </Button>
+                )}
+
+                {/* Start Working (if in inbox) */}
+                {!isCompleted && !isInProgress && (
+                  <Button
+                    variant="outline"
+                    className="h-auto py-3 flex-col gap-1 border-blue-200 hover:bg-blue-50 hover:border-blue-400 dark:border-blue-800 dark:hover:bg-blue-950"
+                    onClick={() => handleStatusChange("in-progress")}
+                    disabled={isChangingStatus}
+                  >
+                    {isChangingStatus ? (
+                      <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
+                    ) : (
+                      <Play className="w-5 h-5 text-blue-500" />
+                    )}
+                    <span className="text-xs text-blue-600 dark:text-blue-400">
+                      Start Working
+                    </span>
+                  </Button>
+                )}
+
+                {/* Delete - with confirmation */}
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="h-auto py-3 flex-col gap-1 border-red-200 hover:bg-red-50 hover:border-red-400 dark:border-red-800 dark:hover:bg-red-950"
+                    >
+                      <Trash2 className="w-5 h-5 text-red-500" />
+                      <span className="text-xs text-red-600 dark:text-red-400">
+                        Delete
+                      </span>
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete this idea?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will permanently delete &quot;{idea.title}&quot;. This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDelete}
+                        className="bg-red-600 hover:bg-red-700"
+                        disabled={isDeleting}
+                      >
+                        {isDeleting ? "Deleting..." : "Delete"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
+
+              {/* Already in Focus indicator */}
+              {isScheduledForToday && !isCompleted && (
+                <div className="flex items-center gap-2 text-sm text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950 rounded-lg px-3 py-2">
+                  <Target className="w-4 h-4" />
+                  <span>This idea is in today&apos;s Focus</span>
+                </div>
+              )}
             </div>
           )}
         </div>
