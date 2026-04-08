@@ -21,15 +21,17 @@ import {
   AlertCircle,
   ArrowUp,
   Flame,
+  Inbox,
 } from "lucide-react";
 import { formatTime } from "@/lib/utils";
 import { PRIORITIES } from "@/lib/constants";
 import { toast } from "sonner";
 import type { ProjectWithIdeas } from "@/types";
-import type { Idea } from "@/lib/db/schema";
+import type { Idea, Project } from "@/lib/db/schema";
 
 interface ProjectsWithIdeasListProps {
   projects: ProjectWithIdeas[];
+  orphanIdeas?: Idea[];
 }
 
 // Priority order for sorting (lower = higher priority)
@@ -54,12 +56,14 @@ function sortIdeasByPriority(ideas: Idea[]): Idea[] {
   });
 }
 
-export function ProjectsWithIdeasList({ projects }: ProjectsWithIdeasListProps) {
+export function ProjectsWithIdeasList({ projects, orphanIdeas = [] }: ProjectsWithIdeasListProps) {
   const router = useRouter();
   const [schedulingId, setSchedulingId] = useState<string | null>(null);
   const [removingFromFocusId, setRemovingFromFocusId] = useState<string | null>(null);
   // Track collapsed state per project (default: expanded)
   const [collapsedProjects, setCollapsedProjects] = useState<Set<string>>(new Set());
+  // Track collapsed state for Quick Ideas section
+  const [quickIdeasCollapsed, setQuickIdeasCollapsed] = useState(false);
 
   const toggleProjectCollapse = (projectId: string, e: React.MouseEvent) => {
     e.preventDefault();
@@ -138,7 +142,147 @@ export function ProjectsWithIdeasList({ projects }: ProjectsWithIdeasListProps) 
     return PRIORITIES.find((p) => p.value === priority);
   };
 
-  if (projects.length === 0) {
+  // Render an idea card (reusable for both project ideas and orphan ideas)
+  const renderIdeaCard = (idea: Idea, borderColor: string, allProjects?: Project[]) => {
+    const isScheduled = !!idea.scheduledForToday;
+    const isCompleted = idea.status === "completed";
+    const isScheduling = schedulingId === idea.id;
+    const isRemoving = removingFromFocusId === idea.id;
+    const priorityInfo = getPriorityInfo(idea.priority);
+
+    return (
+      <IdeaSheet
+        key={idea.id}
+        idea={idea}
+        projects={allProjects}
+        trigger={
+          <Card
+            className={`p-3 cursor-pointer hover:shadow-md transition-all border-l-2 ${
+              isCompleted ? "opacity-60" : ""
+            }`}
+            style={{ borderLeftColor: borderColor }}
+          >
+            <div className="flex items-start gap-3">
+              {/* Priority indicator */}
+              {priorityInfo && (
+                <div className="shrink-0 mt-1" title={priorityInfo.label}>
+                  {idea.priority === "urgent" ? (
+                    <AlertCircle
+                      className="w-4 h-4"
+                      style={{ color: priorityInfo.color }}
+                    />
+                  ) : idea.priority === "high" ? (
+                    <ArrowUp
+                      className="w-4 h-4"
+                      style={{ color: priorityInfo.color }}
+                    />
+                  ) : (
+                    <div
+                      className="w-2 h-2 rounded-full mt-1"
+                      style={{ backgroundColor: priorityInfo.color }}
+                    />
+                  )}
+                </div>
+              )}
+
+              <div className="flex-1 min-w-0">
+                {/* Bold title with badges */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h4
+                    className={`font-bold text-slate-900 dark:text-slate-50 ${
+                      isCompleted ? "line-through" : ""
+                    }`}
+                  >
+                    {idea.title}
+                  </h4>
+                  {priorityInfo && (
+                    <Badge
+                      variant={
+                        idea.priority === "urgent"
+                          ? "destructive"
+                          : idea.priority === "high"
+                            ? "warning"
+                            : "secondary"
+                      }
+                      className="text-xs"
+                    >
+                      {priorityInfo.label}
+                    </Badge>
+                  )}
+                  {isScheduled && !isCompleted && (
+                    <Badge className="bg-orange-500 text-xs">
+                      <Target className="w-3 h-3 mr-1" />
+                      Focus
+                    </Badge>
+                  )}
+                  {isCompleted && (
+                    <Badge variant="success" className="text-xs">
+                      <CheckCircle2 className="w-3 h-3 mr-1" />
+                      Done
+                    </Badge>
+                  )}
+                </div>
+
+                {/* Description - show first 2 lines */}
+                {idea.description && (
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400 line-clamp-2">
+                    {idea.description}
+                  </p>
+                )}
+
+                {/* Meta info */}
+                {idea.timeSpentSeconds > 0 && (
+                  <div className="mt-1 flex items-center gap-1 text-xs text-slate-400">
+                    <Clock className="w-3 h-3" />
+                    {formatTime(idea.timeSpentSeconds)}
+                  </div>
+                )}
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex items-center gap-1 shrink-0">
+                {/* Remove from Focus button (if scheduled) */}
+                {isScheduled && !isCompleted && (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950"
+                    onClick={(e) => handleRemoveFromFocus(idea, e)}
+                    disabled={isRemoving}
+                    title="Remove from Focus"
+                  >
+                    <X
+                      className={`w-4 h-4 ${isRemoving ? "animate-pulse" : ""}`}
+                    />
+                  </Button>
+                )}
+
+                {/* Add to Focus button (always show, even for completed) */}
+                {!isScheduled && (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-orange-500 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950"
+                    onClick={(e) => handleScheduleForFocus(idea, e)}
+                    disabled={isScheduling}
+                    title={isCompleted ? "Reopen & Focus" : "Add to Focus"}
+                  >
+                    <Target
+                      className={`w-4 h-4 ${isScheduling ? "animate-pulse" : ""}`}
+                    />
+                  </Button>
+                )}
+              </div>
+            </div>
+          </Card>
+        }
+      />
+    );
+  };
+
+  const sortedOrphanIdeas = sortIdeasByPriority(orphanIdeas);
+
+  if (projects.length === 0 && orphanIdeas.length === 0) {
     return (
       <Block>
         <Card className="p-8 text-center">
@@ -164,6 +308,53 @@ export function ProjectsWithIdeasList({ projects }: ProjectsWithIdeasListProps) 
 
   return (
     <Block className="space-y-4">
+      {/* Quick Ideas / Uncategorized section - show at top if there are orphan ideas */}
+      {sortedOrphanIdeas.length > 0 && (
+        <div>
+          <Card
+            className="p-4 hover:shadow-md transition-all border-l-4 cursor-pointer border-l-slate-400 bg-slate-50 dark:bg-slate-900"
+            onClick={() => setQuickIdeasCollapsed(!quickIdeasCollapsed)}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="shrink-0 text-slate-400">
+                  {quickIdeasCollapsed ? (
+                    <ChevronRight className="w-5 h-5" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5" />
+                  )}
+                </div>
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-slate-200 dark:bg-slate-700">
+                  <Inbox className="w-5 h-5 text-slate-500" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-bold text-lg text-slate-900 dark:text-slate-50 truncate">
+                      Quick Ideas
+                    </h3>
+                  </div>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
+                    Ideas without a project - tap to assign
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <Badge variant="secondary" className="bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                  {sortedOrphanIdeas.length}
+                </Badge>
+              </div>
+            </div>
+          </Card>
+
+          {!quickIdeasCollapsed && (
+            <div className="ml-4 mt-2 space-y-2">
+              {sortedOrphanIdeas.map((idea) => renderIdeaCard(idea, "#94a3b8", projects))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Regular projects */}
       {projects.map((project) => {
         const isCollapsed = collapsedProjects.has(project.id);
         const sortedIdeas = sortIdeasByPriority(project.ideas);
@@ -239,141 +430,7 @@ export function ProjectsWithIdeasList({ projects }: ProjectsWithIdeasListProps) 
               <div className="ml-4 mt-2 space-y-2">
                 {sortedIdeas.length > 0 ? (
                   <>
-                    {sortedIdeas.map((idea) => {
-                      const isScheduled = !!idea.scheduledForToday;
-                      const isCompleted = idea.status === "completed";
-                      const isScheduling = schedulingId === idea.id;
-                      const isRemoving = removingFromFocusId === idea.id;
-                      const priorityInfo = getPriorityInfo(idea.priority);
-
-                      return (
-                        <IdeaSheet
-                          key={idea.id}
-                          idea={idea}
-                          trigger={
-                            <Card
-                              className={`p-3 cursor-pointer hover:shadow-md transition-all border-l-2 ${
-                                isCompleted ? "opacity-60" : ""
-                              }`}
-                              style={{ borderLeftColor: project.color }}
-                            >
-                              <div className="flex items-start gap-3">
-                                {/* Priority indicator */}
-                                {priorityInfo && (
-                                  <div className="shrink-0 mt-1" title={priorityInfo.label}>
-                                    {idea.priority === "urgent" ? (
-                                      <AlertCircle
-                                        className="w-4 h-4"
-                                        style={{ color: priorityInfo.color }}
-                                      />
-                                    ) : idea.priority === "high" ? (
-                                      <ArrowUp
-                                        className="w-4 h-4"
-                                        style={{ color: priorityInfo.color }}
-                                      />
-                                    ) : (
-                                      <div
-                                        className="w-2 h-2 rounded-full mt-1"
-                                        style={{ backgroundColor: priorityInfo.color }}
-                                      />
-                                    )}
-                                  </div>
-                                )}
-
-                                <div className="flex-1 min-w-0">
-                                  {/* Bold title with badges */}
-                                  <div className="flex items-center gap-2 flex-wrap">
-                                    <h4
-                                      className={`font-bold text-slate-900 dark:text-slate-50 ${
-                                        isCompleted ? "line-through" : ""
-                                      }`}
-                                    >
-                                      {idea.title}
-                                    </h4>
-                                    {priorityInfo && (
-                                      <Badge
-                                        variant={
-                                          idea.priority === "urgent"
-                                            ? "destructive"
-                                            : idea.priority === "high"
-                                              ? "warning"
-                                              : "secondary"
-                                        }
-                                        className="text-xs"
-                                      >
-                                        {priorityInfo.label}
-                                      </Badge>
-                                    )}
-                                    {isScheduled && !isCompleted && (
-                                      <Badge className="bg-orange-500 text-xs">
-                                        <Target className="w-3 h-3 mr-1" />
-                                        Focus
-                                      </Badge>
-                                    )}
-                                    {isCompleted && (
-                                      <Badge variant="success" className="text-xs">
-                                        <CheckCircle2 className="w-3 h-3 mr-1" />
-                                        Done
-                                      </Badge>
-                                    )}
-                                  </div>
-
-                                  {/* Description - show first 2 lines */}
-                                  {idea.description && (
-                                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400 line-clamp-2">
-                                      {idea.description}
-                                    </p>
-                                  )}
-
-                                  {/* Meta info */}
-                                  {idea.timeSpentSeconds > 0 && (
-                                    <div className="mt-1 flex items-center gap-1 text-xs text-slate-400">
-                                      <Clock className="w-3 h-3" />
-                                      {formatTime(idea.timeSpentSeconds)}
-                                    </div>
-                                  )}
-                                </div>
-
-                                {/* Action buttons */}
-                                <div className="flex items-center gap-1 shrink-0">
-                                  {/* Remove from Focus button (if scheduled) */}
-                                  {isScheduled && !isCompleted && (
-                                    <Button
-                                      size="icon"
-                                      variant="ghost"
-                                      className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950"
-                                      onClick={(e) => handleRemoveFromFocus(idea, e)}
-                                      disabled={isRemoving}
-                                      title="Remove from Focus"
-                                    >
-                                      <X
-                                        className={`w-4 h-4 ${isRemoving ? "animate-pulse" : ""}`}
-                                      />
-                                    </Button>
-                                  )}
-
-                                  {/* Add to Focus button (always show, even for completed) */}
-                                  {!isScheduled && (
-                                    <Button
-                                      size="icon"
-                                      variant="ghost"
-                                      className="h-8 w-8 text-orange-500 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950"
-                                      onClick={(e) => handleScheduleForFocus(idea, e)}
-                                      disabled={isScheduling}
-                                      title={isCompleted ? "Reopen & Focus" : "Add to Focus"}
-                                    >
-                                      <Target
-                                        className={`w-4 h-4 ${isScheduling ? "animate-pulse" : ""}`}
-                                      />
-                                    </Button>
-                                  )}
-                                </div>
-                              </div>
-                            </Card>
-                          }
-                        />
-                      );
-                    })}
+                    {sortedIdeas.map((idea) => renderIdeaCard(idea, project.color))}
 
                     {/* Add idea button */}
                     <IdeaSheet

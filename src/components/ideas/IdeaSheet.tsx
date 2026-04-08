@@ -46,16 +46,17 @@ import {
 import { PRIORITIES } from "@/lib/constants";
 import { toast } from "sonner";
 import { formatTime } from "@/lib/utils";
-import type { Idea } from "@/lib/db/schema";
+import type { Idea, Project } from "@/lib/db/schema";
 
 interface IdeaSheetProps {
   idea?: Idea;
   projectId?: string;
+  projects?: Project[]; // Available projects for assignment
   trigger: React.ReactNode;
   onSuccess?: () => void;
 }
 
-export function IdeaSheet({ idea, projectId, trigger, onSuccess }: IdeaSheetProps) {
+export function IdeaSheet({ idea, projectId, projects, trigger, onSuccess }: IdeaSheetProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -66,11 +67,15 @@ export function IdeaSheet({ idea, projectId, trigger, onSuccess }: IdeaSheetProp
   const [description, setDescription] = useState(idea?.description ?? "");
   const [linkUrl, setLinkUrl] = useState(idea?.linkUrl ?? "");
   const [priority, setPriority] = useState<string | undefined>(idea?.priority ?? undefined);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>(
+    idea?.projectId ?? projectId ?? undefined
+  );
 
   const isEdit = !!idea;
   const isScheduledForToday = !!idea?.scheduledForToday;
   const isCompleted = idea?.status === "completed";
   const isInProgress = idea?.status === "in-progress";
+  const hasNoProject = isEdit && !idea?.projectId;
 
   const handleScheduleForToday = async () => {
     if (!idea) return;
@@ -171,7 +176,13 @@ export function IdeaSheet({ idea, projectId, trigger, onSuccess }: IdeaSheetProp
         priority: priority || null,
       };
 
-      if (!isEdit && projectId) {
+      // Include projectId for both create and edit
+      if (selectedProjectId && selectedProjectId !== "none") {
+        body.projectId = selectedProjectId;
+      } else if (isEdit) {
+        // Allow removing project assignment
+        body.projectId = null;
+      } else if (!isEdit && projectId) {
         body.projectId = projectId;
       }
 
@@ -295,6 +306,34 @@ export function IdeaSheet({ idea, projectId, trigger, onSuccess }: IdeaSheetProp
               </SelectContent>
             </Select>
           </div>
+
+          {/* Project selector - show for orphan ideas or when projects are provided */}
+          {isEdit && (hasNoProject || projects) && projects && projects.length > 0 && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Project {hasNoProject && <span className="text-orange-500">(Not assigned)</span>}
+              </label>
+              <Select value={selectedProjectId || "none"} onValueChange={setSelectedProjectId}>
+                <SelectTrigger className={hasNoProject ? "border-orange-300 dark:border-orange-700" : ""}>
+                  <SelectValue placeholder="Select a project" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No project</SelectItem>
+                  {projects.map((project) => (
+                    <SelectItem key={project.id} value={project.id}>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: project.color }}
+                        />
+                        {project.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Quick Actions for existing ideas */}
           {isEdit && (
