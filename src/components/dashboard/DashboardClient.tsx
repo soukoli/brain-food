@@ -15,8 +15,10 @@ import {
   Target,
   Quote,
   RefreshCw,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
+import { motion, AnimatePresence } from "framer-motion";
 import type { IdeaWithProject, DashboardStats } from "@/types";
 
 interface DashboardClientProps {
@@ -33,11 +35,26 @@ export function DashboardClient({ stats, recentIdeas }: DashboardClientProps) {
   const router = useRouter();
   const [quote, setQuote] = useState<QuoteData | null>(null);
   const [isLoadingQuote, setIsLoadingQuote] = useState(true);
+  const [isQuoteVisible, setIsQuoteVisible] = useState(true);
+
+  // Check if quote was dismissed today
+  useEffect(() => {
+    const dismissedDate = localStorage.getItem("quoteDismissedDate");
+    const today = new Date().toDateString();
+    // Show quote again on a new day
+    if (dismissedDate !== today) {
+      setIsQuoteVisible(true);
+    } else {
+      setIsQuoteVisible(false);
+    }
+  }, []);
 
   // Fetch quote on mount
   useEffect(() => {
-    fetchQuote();
-  }, []);
+    if (isQuoteVisible) {
+      fetchQuote();
+    }
+  }, [isQuoteVisible]);
 
   const fetchQuote = async () => {
     setIsLoadingQuote(true);
@@ -52,6 +69,18 @@ export function DashboardClient({ stats, recentIdeas }: DashboardClientProps) {
     } finally {
       setIsLoadingQuote(false);
     }
+  };
+
+  const handleDismissQuote = () => {
+    setIsQuoteVisible(false);
+    // Remember dismissal for today
+    localStorage.setItem("quoteDismissedDate", new Date().toDateString());
+  };
+
+  const handleShowQuote = () => {
+    setIsQuoteVisible(true);
+    localStorage.removeItem("quoteDismissedDate");
+    fetchQuote();
   };
 
   const handleScheduleForFocus = async (idea: IdeaWithProject, e: React.MouseEvent) => {
@@ -85,45 +114,82 @@ export function DashboardClient({ stats, recentIdeas }: DashboardClientProps) {
 
   return (
     <div className="pb-4">
-      {/* Inspirational Quote */}
-      <Block className="!mt-0 !mb-4">
-        <Card className="p-5 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-indigo-950/40 dark:via-purple-950/40 dark:to-pink-950/40 border-none shadow-sm">
-          <div className="flex items-start gap-3">
-            <div className="shrink-0 mt-1">
-              <Quote className="w-6 h-6 text-indigo-400 dark:text-indigo-500" />
-            </div>
-            <div className="flex-1 min-w-0">
-              {isLoadingQuote ? (
-                <div className="space-y-2 animate-pulse">
-                  <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4"></div>
-                  <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/2"></div>
-                  <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-1/4 mt-3"></div>
+      {/* Inspirational Quote - Dismissible */}
+      <AnimatePresence>
+        {isQuoteVisible && (
+          <motion.div
+            initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+            animate={{ opacity: 1, height: "auto", marginBottom: 16 }}
+            exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <Block className="!mt-0 !mb-0">
+              <Card className="p-4 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-indigo-950/40 dark:via-purple-950/40 dark:to-pink-950/40 border-none shadow-sm">
+                <div className="flex items-start gap-3">
+                  <div className="shrink-0 mt-0.5">
+                    <Quote className="w-5 h-5 text-indigo-400 dark:text-indigo-500" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    {isLoadingQuote ? (
+                      <div className="space-y-2 animate-pulse">
+                        <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4"></div>
+                        <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/2"></div>
+                      </div>
+                    ) : quote ? (
+                      <>
+                        <p className="text-sm font-medium text-slate-700 dark:text-slate-200 italic leading-relaxed">
+                          &ldquo;{quote.quote}&rdquo;
+                        </p>
+                        <p className="mt-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400">
+                          — {quote.author}
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-sm text-slate-500">Start your day with purpose</p>
+                    )}
+                  </div>
+                  <div className="shrink-0 flex flex-col gap-1">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7 text-slate-400 hover:text-slate-600"
+                      onClick={handleDismissQuote}
+                      title="Hide quote"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7 text-slate-400 hover:text-indigo-500"
+                      onClick={fetchQuote}
+                      disabled={isLoadingQuote}
+                      title="New quote"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${isLoadingQuote ? "animate-spin" : ""}`} />
+                    </Button>
+                  </div>
                 </div>
-              ) : quote ? (
-                <>
-                  <p className="text-base font-medium text-slate-800 dark:text-slate-200 italic leading-relaxed">
-                    &ldquo;{quote.quote}&rdquo;
-                  </p>
-                  <p className="mt-2 text-sm font-semibold text-indigo-600 dark:text-indigo-400">
-                    — {quote.author}
-                  </p>
-                </>
-              ) : (
-                <p className="text-sm text-slate-500">Start your day with purpose</p>
-              )}
-            </div>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="shrink-0 h-8 w-8 text-slate-400 hover:text-indigo-500"
-              onClick={fetchQuote}
-              disabled={isLoadingQuote}
-            >
-              <RefreshCw className={`w-4 h-4 ${isLoadingQuote ? "animate-spin" : ""}`} />
-            </Button>
-          </div>
-        </Card>
-      </Block>
+              </Card>
+            </Block>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Show quote button when hidden */}
+      {!isQuoteVisible && (
+        <Block className="!mt-0 !mb-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full text-slate-400 hover:text-indigo-500"
+            onClick={handleShowQuote}
+          >
+            <Quote className="w-4 h-4 mr-2" />
+            Show daily quote
+          </Button>
+        </Block>
+      )}
 
       {/* Quick Actions */}
       <Block className="!mb-4">
