@@ -67,11 +67,15 @@ export async function POST(request: Request) {
     const body = await request.json();
     const validatedData = createIdeaSchema.parse(body);
 
+    // Convert scheduledForToday string to Date if present
+    const { scheduledForToday, ...restData } = validatedData;
+
     const [newIdea] = await db
       .insert(ideas)
       .values({
-        ...validatedData,
+        ...restData,
         userId: user.id,
+        scheduledForToday: scheduledForToday ? new Date(scheduledForToday) : null,
       })
       .returning();
 

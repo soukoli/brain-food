@@ -24,6 +24,7 @@ export const ideaSchema = z.object({
   projectId: z.string().uuid("Invalid project ID").optional().nullable(),
   priority: z.enum(["low", "medium", "high", "urgent"]).optional().nullable(),
   captureMethod: z.enum(["text", "voice", "link"]).default("text"),
+  scheduledForToday: z.string().datetime().optional().nullable(),
 });
 
 export const createIdeaSchema = ideaSchema;
