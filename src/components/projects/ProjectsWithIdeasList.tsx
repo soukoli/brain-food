@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { ProjectSheet } from "./ProjectSheet";
 import { IdeaSheet } from "@/components/ideas/IdeaSheet";
 import { Button } from "@/components/ui/button";
@@ -21,7 +20,6 @@ import {
   X,
   AlertCircle,
   ArrowUp,
-  ArrowDown,
   Flame,
   Inbox,
 } from "lucide-react";
@@ -47,13 +45,11 @@ const PRIORITY_ORDER: Record<string, number> = {
 // Sort ideas by priority (urgent first), then by creation date
 function sortIdeasByPriority(ideas: Idea[]): Idea[] {
   return [...ideas].sort((a, b) => {
-    // First by priority
     const priorityA = a.priority ? (PRIORITY_ORDER[a.priority] ?? 99) : 99;
     const priorityB = b.priority ? (PRIORITY_ORDER[b.priority] ?? 99) : 99;
     if (priorityA !== priorityB) {
       return priorityA - priorityB;
     }
-    // Then by creation date (newest first)
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 }
@@ -68,8 +64,6 @@ export function ProjectsWithIdeasList({ projects, orphanIdeas = [] }: ProjectsWi
   );
   // Track collapsed state for Quick Ideas section (collapsed by default)
   const [quickIdeasCollapsed, setQuickIdeasCollapsed] = useState(true);
-  // Track if we're currently reordering
-  const [isReordering, setIsReordering] = useState(false);
 
   const toggleProjectCollapse = (projectId: string, e: React.MouseEvent) => {
     e.preventDefault();
@@ -83,40 +77,6 @@ export function ProjectsWithIdeasList({ projects, orphanIdeas = [] }: ProjectsWi
       }
       return newSet;
     });
-  };
-
-  const handleReorderProjects = async (projectId: string, direction: "up" | "down") => {
-    const currentIndex = projects.findIndex(p => p.id === projectId);
-    if (currentIndex === -1) return;
-    
-    const newIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
-    if (newIndex < 0 || newIndex >= projects.length) return;
-
-    setIsReordering(true);
-    try {
-      // Get the project we're swapping with
-      const otherProject = projects[newIndex];
-      
-      // Swap sort orders
-      await Promise.all([
-        fetch(`/api/projects/${projectId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sortOrder: newIndex }),
-        }),
-        fetch(`/api/projects/${otherProject.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sortOrder: currentIndex }),
-        }),
-      ]);
-
-      router.refresh();
-    } catch {
-      toast.error("Failed to reorder projects");
-    } finally {
-      setIsReordering(false);
-    }
   };
 
   const handleDeleteIdea = async (ideaId: string) => {
@@ -143,7 +103,6 @@ export function ProjectsWithIdeasList({ projects, orphanIdeas = [] }: ProjectsWi
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           scheduledForToday: new Date().toISOString(),
-          // If completed, also reset status to in-progress
           ...(idea.status === "completed" && { status: "in-progress" }),
         }),
       });
@@ -195,7 +154,7 @@ export function ProjectsWithIdeasList({ projects, orphanIdeas = [] }: ProjectsWi
     return PRIORITIES.find((p) => p.value === priority);
   };
 
-  // Render an idea card (reusable for both project ideas and orphan ideas)
+  // Render an idea card - compact iOS style
   const renderIdeaCard = (idea: Idea, borderColor: string, allProjects?: Project[]) => {
     const isScheduled = !!idea.scheduledForToday;
     const isCompleted = idea.status === "completed";
@@ -205,121 +164,69 @@ export function ProjectsWithIdeasList({ projects, orphanIdeas = [] }: ProjectsWi
 
     const cardContent = (
       <Card
-        className={`p-3 cursor-pointer hover:shadow-md transition-all border-l-2 ${
+        className={`p-2.5 cursor-pointer active:bg-slate-50 dark:active:bg-slate-900 transition-all border-l-2 ${
           isCompleted ? "opacity-60" : ""
         }`}
         style={{ borderLeftColor: borderColor }}
       >
-        <div className="flex items-start gap-3">
+        <div className="flex items-center gap-2">
           {/* Priority indicator */}
           {priorityInfo && (
-            <div className="shrink-0 mt-1" title={priorityInfo.label}>
+            <div className="shrink-0" title={priorityInfo.label}>
               {idea.priority === "urgent" ? (
-                <AlertCircle
-                  className="w-4 h-4"
-                  style={{ color: priorityInfo.color }}
-                />
+                <AlertCircle className="w-3.5 h-3.5" style={{ color: priorityInfo.color }} />
               ) : idea.priority === "high" ? (
-                <ArrowUp
-                  className="w-4 h-4"
-                  style={{ color: priorityInfo.color }}
-                />
+                <ArrowUp className="w-3.5 h-3.5" style={{ color: priorityInfo.color }} />
               ) : (
-                <div
-                  className="w-2 h-2 rounded-full mt-1"
-                  style={{ backgroundColor: priorityInfo.color }}
-                />
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: priorityInfo.color }} />
               )}
             </div>
           )}
 
+          {/* Title and meta */}
           <div className="flex-1 min-w-0">
-            {/* Bold title with badges */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <h4
-                className={`font-bold text-slate-900 dark:text-slate-50 ${
-                  isCompleted ? "line-through" : ""
-                }`}
-              >
+            <div className="flex items-center gap-1.5">
+              <span className={`font-medium text-sm text-slate-900 dark:text-slate-50 truncate ${isCompleted ? "line-through" : ""}`}>
                 {idea.title}
-              </h4>
-              {priorityInfo && (
-                <Badge
-                  variant={
-                    idea.priority === "urgent"
-                      ? "destructive"
-                      : idea.priority === "high"
-                        ? "warning"
-                        : "secondary"
-                  }
-                  className="text-xs"
-                >
-                  {priorityInfo.label}
-                </Badge>
-              )}
+              </span>
               {isScheduled && !isCompleted && (
-                <Badge className="bg-orange-500 text-xs">
-                  <Target className="w-3 h-3 mr-1" />
-                  Focus
-                </Badge>
+                <Target className="w-3 h-3 text-orange-500 shrink-0" />
               )}
               {isCompleted && (
-                <Badge variant="success" className="text-xs">
-                  <CheckCircle2 className="w-3 h-3 mr-1" />
-                  Done
-                </Badge>
+                <CheckCircle2 className="w-3 h-3 text-green-500 shrink-0" />
               )}
             </div>
-
-            {/* Description - show first 2 lines */}
-            {idea.description && (
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400 line-clamp-2">
-                {idea.description}
-              </p>
-            )}
-
-            {/* Meta info */}
             {idea.timeSpentSeconds > 0 && (
-              <div className="mt-1 flex items-center gap-1 text-xs text-slate-400">
-                <Clock className="w-3 h-3" />
+              <div className="flex items-center gap-1 text-xs text-slate-400">
+                <Clock className="w-2.5 h-2.5" />
                 {formatTime(idea.timeSpentSeconds)}
               </div>
             )}
           </div>
 
-          {/* Action buttons */}
-          <div className="flex items-center gap-1 shrink-0">
-            {/* Remove from Focus button (if scheduled) */}
-            {isScheduled && !isCompleted && (
+          {/* Quick action */}
+          <div className="shrink-0">
+            {isScheduled && !isCompleted ? (
               <Button
                 size="icon"
                 variant="ghost"
-                className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950"
+                className="h-7 w-7 text-slate-400 hover:text-red-500"
                 onClick={(e) => handleRemoveFromFocus(idea, e)}
                 disabled={isRemoving}
-                title="Remove from Focus"
               >
-                <X
-                  className={`w-4 h-4 ${isRemoving ? "animate-pulse" : ""}`}
-                />
+                <X className={`w-3.5 h-3.5 ${isRemoving ? "animate-pulse" : ""}`} />
               </Button>
-            )}
-
-            {/* Add to Focus button (always show, even for completed) */}
-            {!isScheduled && (
+            ) : !isScheduled ? (
               <Button
                 size="icon"
                 variant="ghost"
-                className="h-8 w-8 text-orange-500 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950"
+                className="h-7 w-7 text-orange-500 hover:text-orange-600"
                 onClick={(e) => handleScheduleForFocus(idea, e)}
                 disabled={isScheduling}
-                title={isCompleted ? "Reopen & Focus" : "Add to Focus"}
               >
-                <Target
-                  className={`w-4 h-4 ${isScheduling ? "animate-pulse" : ""}`}
-                />
+                <Target className={`w-3.5 h-3.5 ${isScheduling ? "animate-pulse" : ""}`} />
               </Button>
-            )}
+            ) : null}
           </div>
         </div>
       </Card>
@@ -331,11 +238,7 @@ export function ProjectsWithIdeasList({ projects, orphanIdeas = [] }: ProjectsWi
         onDelete={() => handleDeleteIdea(idea.id)}
         ideaTitle={idea.title}
       >
-        <IdeaSheet
-          idea={idea}
-          projects={allProjects}
-          trigger={cardContent}
-        />
+        <IdeaSheet idea={idea} projects={allProjects} trigger={cardContent} />
       </SwipeableCard>
     );
   };
@@ -367,184 +270,132 @@ export function ProjectsWithIdeasList({ projects, orphanIdeas = [] }: ProjectsWi
   }
 
   return (
-    <Block className="space-y-4">
+    <Block className="space-y-2">
       {/* Regular projects */}
-      {projects.map((project, index) => {
+      {projects.map((project) => {
         const isCollapsed = collapsedProjects.has(project.id);
         const sortedIdeas = sortIdeasByPriority(project.ideas);
         const hasUrgent = sortedIdeas.some((i) => i.priority === "urgent");
         const focusCount = sortedIdeas.filter(
           (i) => i.scheduledForToday && i.status !== "completed"
         ).length;
-        const canMoveUp = index > 0;
-        const canMoveDown = index < projects.length - 1;
 
         return (
           <div key={project.id}>
-            {/* Project Header - Clickable to collapse/expand */}
+            {/* Project Header - Compact iOS-style */}
             <Card
-              className="p-4 hover:shadow-md transition-all border-l-4 cursor-pointer"
+              className="p-3 active:bg-slate-50 dark:active:bg-slate-900 transition-all border-l-4 cursor-pointer"
               style={{ borderLeftColor: project.color }}
               onClick={(e) => toggleProjectCollapse(project.id, e)}
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3 min-w-0">
-                  {/* Reorder buttons */}
-                  <div className="flex flex-col shrink-0" onClick={(e) => e.stopPropagation()}>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-5 w-5 text-slate-300 hover:text-slate-500 disabled:opacity-30"
-                      onClick={() => handleReorderProjects(project.id, "up")}
-                      disabled={!canMoveUp || isReordering}
-                    >
-                      <ArrowUp className="w-3 h-3" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-5 w-5 text-slate-300 hover:text-slate-500 disabled:opacity-30"
-                      onClick={() => handleReorderProjects(project.id, "down")}
-                      disabled={!canMoveDown || isReordering}
-                    >
-                      <ArrowDown className="w-3 h-3" />
-                    </Button>
-                  </div>
-                  {/* Collapse/Expand indicator */}
-                  <div className="shrink-0 text-slate-400">
+              <div className="flex items-center gap-2.5">
+                {/* Icon with chevron overlay */}
+                <div
+                  className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 relative"
+                  style={{ backgroundColor: project.color + "20" }}
+                >
+                  <FolderOpen className="w-4 h-4" style={{ color: project.color }} />
+                  <div className="absolute -right-0.5 -bottom-0.5 w-4 h-4 bg-white dark:bg-slate-950 rounded-full flex items-center justify-center shadow-sm border border-slate-100 dark:border-slate-800">
                     {isCollapsed ? (
-                      <ChevronRight className="w-5 h-5" />
+                      <ChevronRight className="w-2.5 h-2.5 text-slate-400" />
                     ) : (
-                      <ChevronDown className="w-5 h-5" />
-                    )}
-                  </div>
-                  <div
-                    className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
-                    style={{ backgroundColor: project.color + "20" }}
-                  >
-                    <FolderOpen className="w-5 h-5" style={{ color: project.color }} />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-bold text-lg text-slate-900 dark:text-slate-50 truncate">
-                        {project.name}
-                      </h3>
-                      {hasUrgent && <Flame className="w-4 h-4 text-red-500 shrink-0" />}
-                    </div>
-                    {project.description && (
-                      <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
-                        {project.description}
-                      </p>
+                      <ChevronDown className="w-2.5 h-2.5 text-slate-400" />
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
+
+                {/* Project info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1">
+                    <h3 className="font-semibold text-sm text-slate-900 dark:text-slate-50 truncate">
+                      {project.name}
+                    </h3>
+                    {hasUrgent && <Flame className="w-3 h-3 text-red-500 shrink-0" />}
+                  </div>
+                  {project.description && (
+                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                      {project.description}
+                    </p>
+                  )}
+                </div>
+
+                {/* Badges */}
+                <div className="flex items-center gap-1 shrink-0">
                   {focusCount > 0 && (
-                    <Badge className="bg-orange-500 text-xs">
-                      <Target className="w-3 h-3 mr-1" />
+                    <Badge className="bg-orange-500 text-[10px] h-5 px-1.5 font-medium">
                       {focusCount}
                     </Badge>
                   )}
                   <Badge
                     variant="secondary"
-                    style={{ backgroundColor: project.color + "20", color: project.color }}
+                    className="h-5 px-1.5 text-[10px] font-medium"
+                    style={{ backgroundColor: project.color + "15", color: project.color }}
                   >
                     {project.ideas.length}
                   </Badge>
-                  <Link
-                    href={`/projects/${project.id}`}
-                    onClick={(e) => e.stopPropagation()}
-                    className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded"
-                  >
-                    <ChevronRight className="w-5 h-5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300" />
-                  </Link>
                 </div>
               </div>
             </Card>
 
-            {/* Ideas under this project - collapsible */}
+            {/* Ideas - collapsible */}
             {!isCollapsed && (
-              <div className="ml-4 mt-2 space-y-2">
-                {sortedIdeas.length > 0 ? (
-                  <>
-                    {sortedIdeas.map((idea) => renderIdeaCard(idea, project.color))}
-
-                    {/* Add idea button */}
-                    <IdeaSheet
-                      projectId={project.id}
-                      trigger={
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-full border border-dashed border-slate-200 dark:border-slate-700 hover:border-slate-400 text-slate-500"
-                        >
-                          <Plus className="w-4 h-4 mr-2" />
-                          Add idea
-                        </Button>
-                      }
-                    />
-                  </>
-                ) : (
-                  <IdeaSheet
-                    projectId={project.id}
-                    trigger={
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="w-full border border-dashed border-slate-200 dark:border-slate-700 hover:border-slate-400 text-slate-500"
-                      >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add first idea
-                      </Button>
-                    }
-                  />
-                )}
+              <div className="ml-3 mt-1.5 space-y-1.5 border-l-2 border-slate-100 dark:border-slate-800 pl-2">
+                {sortedIdeas.map((idea) => renderIdeaCard(idea, project.color))}
+                
+                {/* Add idea button */}
+                <IdeaSheet
+                  projectId={project.id}
+                  trigger={
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full h-8 border border-dashed border-slate-200 dark:border-slate-700 text-slate-400 text-xs"
+                    >
+                      <Plus className="w-3 h-3 mr-1" />
+                      {sortedIdeas.length === 0 ? "Add first idea" : "Add idea"}
+                    </Button>
+                  }
+                />
               </div>
             )}
           </div>
         );
       })}
 
-      {/* Quick Ideas / Uncategorized section - at the bottom */}
+      {/* Quick Ideas - at the bottom */}
       {sortedOrphanIdeas.length > 0 && (
         <div>
           <Card
-            className="p-4 hover:shadow-md transition-all border-l-4 cursor-pointer border-l-slate-400 bg-slate-50 dark:bg-slate-900"
+            className="p-3 active:bg-slate-100 dark:active:bg-slate-800 transition-all border-l-4 border-l-slate-400 bg-slate-50 dark:bg-slate-900/50 cursor-pointer"
             onClick={() => setQuickIdeasCollapsed(!quickIdeasCollapsed)}
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="shrink-0 text-slate-400">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-slate-200 dark:bg-slate-700 relative">
+                <Inbox className="w-4 h-4 text-slate-500" />
+                <div className="absolute -right-0.5 -bottom-0.5 w-4 h-4 bg-white dark:bg-slate-950 rounded-full flex items-center justify-center shadow-sm border border-slate-100 dark:border-slate-800">
                   {quickIdeasCollapsed ? (
-                    <ChevronRight className="w-5 h-5" />
+                    <ChevronRight className="w-2.5 h-2.5 text-slate-400" />
                   ) : (
-                    <ChevronDown className="w-5 h-5" />
+                    <ChevronDown className="w-2.5 h-2.5 text-slate-400" />
                   )}
                 </div>
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-slate-200 dark:bg-slate-700">
-                  <Inbox className="w-5 h-5 text-slate-500" />
-                </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-lg text-slate-900 dark:text-slate-50 truncate">
-                      Quick Ideas
-                    </h3>
-                  </div>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
-                    Ideas without a project - tap to assign
-                  </p>
-                </div>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <Badge variant="secondary" className="bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
-                  {sortedOrphanIdeas.length}
-                </Badge>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-sm text-slate-700 dark:text-slate-300">
+                  Quick Ideas
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Tap to assign to project
+                </p>
               </div>
+              <Badge variant="secondary" className="h-5 px-1.5 text-[10px] bg-slate-200 dark:bg-slate-700">
+                {sortedOrphanIdeas.length}
+              </Badge>
             </div>
           </Card>
 
           {!quickIdeasCollapsed && (
-            <div className="ml-4 mt-2 space-y-2">
+            <div className="ml-3 mt-1.5 space-y-1.5 border-l-2 border-slate-200 dark:border-slate-700 pl-2">
               {sortedOrphanIdeas.map((idea) => renderIdeaCard(idea, "#94a3b8", projects))}
             </div>
           )}
