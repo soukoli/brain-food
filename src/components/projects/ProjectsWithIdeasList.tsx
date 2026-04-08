@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Block } from "@/components/ui/block";
+import { SwipeableCard } from "@/components/ui/swipeable-card";
 import {
   Plus,
   FolderOpen,
@@ -77,6 +78,19 @@ export function ProjectsWithIdeasList({ projects, orphanIdeas = [] }: ProjectsWi
       }
       return newSet;
     });
+  };
+
+  const handleDeleteIdea = async (ideaId: string) => {
+    const response = await fetch(`/api/ideas/${ideaId}`, {
+      method: "DELETE",
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to delete idea");
+    }
+
+    toast.success("Idea deleted");
+    router.refresh();
   };
 
   const handleScheduleForFocus = async (idea: Idea, e: React.MouseEvent) => {
@@ -150,133 +164,140 @@ export function ProjectsWithIdeasList({ projects, orphanIdeas = [] }: ProjectsWi
     const isRemoving = removingFromFocusId === idea.id;
     const priorityInfo = getPriorityInfo(idea.priority);
 
-    return (
-      <IdeaSheet
-        key={idea.id}
-        idea={idea}
-        projects={allProjects}
-        trigger={
-          <Card
-            className={`p-3 cursor-pointer hover:shadow-md transition-all border-l-2 ${
-              isCompleted ? "opacity-60" : ""
-            }`}
-            style={{ borderLeftColor: borderColor }}
-          >
-            <div className="flex items-start gap-3">
-              {/* Priority indicator */}
-              {priorityInfo && (
-                <div className="shrink-0 mt-1" title={priorityInfo.label}>
-                  {idea.priority === "urgent" ? (
-                    <AlertCircle
-                      className="w-4 h-4"
-                      style={{ color: priorityInfo.color }}
-                    />
-                  ) : idea.priority === "high" ? (
-                    <ArrowUp
-                      className="w-4 h-4"
-                      style={{ color: priorityInfo.color }}
-                    />
-                  ) : (
-                    <div
-                      className="w-2 h-2 rounded-full mt-1"
-                      style={{ backgroundColor: priorityInfo.color }}
-                    />
-                  )}
-                </div>
+    const cardContent = (
+      <Card
+        className={`p-3 cursor-pointer hover:shadow-md transition-all border-l-2 ${
+          isCompleted ? "opacity-60" : ""
+        }`}
+        style={{ borderLeftColor: borderColor }}
+      >
+        <div className="flex items-start gap-3">
+          {/* Priority indicator */}
+          {priorityInfo && (
+            <div className="shrink-0 mt-1" title={priorityInfo.label}>
+              {idea.priority === "urgent" ? (
+                <AlertCircle
+                  className="w-4 h-4"
+                  style={{ color: priorityInfo.color }}
+                />
+              ) : idea.priority === "high" ? (
+                <ArrowUp
+                  className="w-4 h-4"
+                  style={{ color: priorityInfo.color }}
+                />
+              ) : (
+                <div
+                  className="w-2 h-2 rounded-full mt-1"
+                  style={{ backgroundColor: priorityInfo.color }}
+                />
               )}
-
-              <div className="flex-1 min-w-0">
-                {/* Bold title with badges */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h4
-                    className={`font-bold text-slate-900 dark:text-slate-50 ${
-                      isCompleted ? "line-through" : ""
-                    }`}
-                  >
-                    {idea.title}
-                  </h4>
-                  {priorityInfo && (
-                    <Badge
-                      variant={
-                        idea.priority === "urgent"
-                          ? "destructive"
-                          : idea.priority === "high"
-                            ? "warning"
-                            : "secondary"
-                      }
-                      className="text-xs"
-                    >
-                      {priorityInfo.label}
-                    </Badge>
-                  )}
-                  {isScheduled && !isCompleted && (
-                    <Badge className="bg-orange-500 text-xs">
-                      <Target className="w-3 h-3 mr-1" />
-                      Focus
-                    </Badge>
-                  )}
-                  {isCompleted && (
-                    <Badge variant="success" className="text-xs">
-                      <CheckCircle2 className="w-3 h-3 mr-1" />
-                      Done
-                    </Badge>
-                  )}
-                </div>
-
-                {/* Description - show first 2 lines */}
-                {idea.description && (
-                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400 line-clamp-2">
-                    {idea.description}
-                  </p>
-                )}
-
-                {/* Meta info */}
-                {idea.timeSpentSeconds > 0 && (
-                  <div className="mt-1 flex items-center gap-1 text-xs text-slate-400">
-                    <Clock className="w-3 h-3" />
-                    {formatTime(idea.timeSpentSeconds)}
-                  </div>
-                )}
-              </div>
-
-              {/* Action buttons */}
-              <div className="flex items-center gap-1 shrink-0">
-                {/* Remove from Focus button (if scheduled) */}
-                {isScheduled && !isCompleted && (
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950"
-                    onClick={(e) => handleRemoveFromFocus(idea, e)}
-                    disabled={isRemoving}
-                    title="Remove from Focus"
-                  >
-                    <X
-                      className={`w-4 h-4 ${isRemoving ? "animate-pulse" : ""}`}
-                    />
-                  </Button>
-                )}
-
-                {/* Add to Focus button (always show, even for completed) */}
-                {!isScheduled && (
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-8 w-8 text-orange-500 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950"
-                    onClick={(e) => handleScheduleForFocus(idea, e)}
-                    disabled={isScheduling}
-                    title={isCompleted ? "Reopen & Focus" : "Add to Focus"}
-                  >
-                    <Target
-                      className={`w-4 h-4 ${isScheduling ? "animate-pulse" : ""}`}
-                    />
-                  </Button>
-                )}
-              </div>
             </div>
-          </Card>
-        }
-      />
+          )}
+
+          <div className="flex-1 min-w-0">
+            {/* Bold title with badges */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <h4
+                className={`font-bold text-slate-900 dark:text-slate-50 ${
+                  isCompleted ? "line-through" : ""
+                }`}
+              >
+                {idea.title}
+              </h4>
+              {priorityInfo && (
+                <Badge
+                  variant={
+                    idea.priority === "urgent"
+                      ? "destructive"
+                      : idea.priority === "high"
+                        ? "warning"
+                        : "secondary"
+                  }
+                  className="text-xs"
+                >
+                  {priorityInfo.label}
+                </Badge>
+              )}
+              {isScheduled && !isCompleted && (
+                <Badge className="bg-orange-500 text-xs">
+                  <Target className="w-3 h-3 mr-1" />
+                  Focus
+                </Badge>
+              )}
+              {isCompleted && (
+                <Badge variant="success" className="text-xs">
+                  <CheckCircle2 className="w-3 h-3 mr-1" />
+                  Done
+                </Badge>
+              )}
+            </div>
+
+            {/* Description - show first 2 lines */}
+            {idea.description && (
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400 line-clamp-2">
+                {idea.description}
+              </p>
+            )}
+
+            {/* Meta info */}
+            {idea.timeSpentSeconds > 0 && (
+              <div className="mt-1 flex items-center gap-1 text-xs text-slate-400">
+                <Clock className="w-3 h-3" />
+                {formatTime(idea.timeSpentSeconds)}
+              </div>
+            )}
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex items-center gap-1 shrink-0">
+            {/* Remove from Focus button (if scheduled) */}
+            {isScheduled && !isCompleted && (
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950"
+                onClick={(e) => handleRemoveFromFocus(idea, e)}
+                disabled={isRemoving}
+                title="Remove from Focus"
+              >
+                <X
+                  className={`w-4 h-4 ${isRemoving ? "animate-pulse" : ""}`}
+                />
+              </Button>
+            )}
+
+            {/* Add to Focus button (always show, even for completed) */}
+            {!isScheduled && (
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8 text-orange-500 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950"
+                onClick={(e) => handleScheduleForFocus(idea, e)}
+                disabled={isScheduling}
+                title={isCompleted ? "Reopen & Focus" : "Add to Focus"}
+              >
+                <Target
+                  className={`w-4 h-4 ${isScheduling ? "animate-pulse" : ""}`}
+                />
+              </Button>
+            )}
+          </div>
+        </div>
+      </Card>
+    );
+
+    return (
+      <SwipeableCard
+        key={idea.id}
+        onDelete={() => handleDeleteIdea(idea.id)}
+        ideaTitle={idea.title}
+      >
+        <IdeaSheet
+          idea={idea}
+          projects={allProjects}
+          trigger={cardContent}
+        />
+      </SwipeableCard>
     );
   };
 
