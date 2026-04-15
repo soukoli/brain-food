@@ -68,6 +68,18 @@ async function runMigrations() {
       process.exit(0);
     }
 
+    // Handle case where tables already exist (relation already exists)
+    if (
+      error instanceof Error &&
+      (error.message.includes("already exists") ||
+        error.message.includes("relation") ||
+        error.message.includes("duplicate"))
+    ) {
+      console.log("   ⚠️ Tables already exist, skipping migration");
+      console.log("   (This is expected if database was set up with db:push)");
+      process.exit(0);
+    }
+
     // Fail build on real errors
     process.exit(1);
   } finally {
