@@ -18,7 +18,7 @@ export function BlockTitle({ children, className }: BlockTitleProps) {
   return (
     <h2
       className={cn(
-        "px-4 py-2 text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide",
+        "px-4 py-2 text-sm font-semibold text-text-secondary uppercase tracking-wide",
         className
       )}
     >

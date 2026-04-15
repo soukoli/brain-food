@@ -8,8 +8,7 @@ import { TaskTimerCard } from "@/components/focus/TaskTimerCard";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Block, BlockTitle } from "@/components/ui/block";
-import { Target, CheckCircle2, Clock, ArrowRight, Zap, RotateCcw } from "lucide-react";
+import { Target, CheckCircle2, Clock, ArrowRight, Zap, RotateCcw, Lightbulb } from "lucide-react";
 import { formatTime } from "@/lib/utils";
 import { toast } from "sonner";
 import type { IdeaWithProject } from "@/types";
@@ -31,7 +30,6 @@ export function FocusClient({ activeTasks, completedToday }: FocusClientProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           status: "in-progress",
-          // Keep scheduledForToday so it stays in Focus
         }),
       });
 
@@ -47,8 +45,8 @@ export function FocusClient({ activeTasks, completedToday }: FocusClientProps) {
       setReopeningId(null);
     }
   };
-  const totalTimeToday = completedToday.reduce((acc, idea) => acc + idea.timeSpentSeconds, 0);
 
+  const totalTimeToday = completedToday.reduce((acc, idea) => acc + idea.timeSpentSeconds, 0);
   const runningTask = activeTasks.find((task) => task.isTimerRunning);
 
   return (
@@ -57,7 +55,7 @@ export function FocusClient({ activeTasks, completedToday }: FocusClientProps) {
         title="Focus"
         right={
           runningTask && (
-            <Badge variant="default" className="animate-pulse bg-orange-500">
+            <Badge variant="default" className="animate-pulse bg-warning text-text-inverse">
               <Clock className="w-3 h-3 mr-1" />
               Active
             </Badge>
@@ -65,35 +63,29 @@ export function FocusClient({ activeTasks, completedToday }: FocusClientProps) {
         }
       />
 
-      {/* Stats summary */}
-      <Block className="!mb-4">
-        <Card className="p-4 border-orange-100 dark:border-orange-900 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30">
+      <div className="px-4 space-y-4">
+        {/* Stats summary */}
+        <Card className="p-5 bg-gradient-to-r from-warning-light to-primary-light border-none">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Today&apos;s Focus</p>
-              <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                {activeTasks.length} tasks
-              </p>
+              <p className="text-sm text-text-secondary">Today&apos;s Focus</p>
+              <p className="text-2xl font-bold text-warning">{activeTasks.length} tasks</p>
             </div>
             <div className="text-right">
-              <p className="text-sm text-slate-500 dark:text-slate-400">Time Logged</p>
-              <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                {formatTime(totalTimeToday)}
-              </p>
+              <p className="text-sm text-text-secondary">Time Logged</p>
+              <p className="text-2xl font-bold text-success">{formatTime(totalTimeToday)}</p>
             </div>
           </div>
         </Card>
-      </Block>
 
-      {/* Active tasks */}
-      {activeTasks.length === 0 ? (
-        <Block>
+        {/* Active tasks */}
+        {activeTasks.length === 0 ? (
           <Card className="p-8 text-center">
-            <Target className="h-12 w-12 text-orange-300 dark:text-orange-700 mx-auto mb-4" />
-            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-50 mb-2">
-              No tasks in Focus
-            </h3>
-            <p className="text-slate-500 dark:text-slate-400 mb-4">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-warning-light flex items-center justify-center">
+              <Target className="h-8 w-8 text-warning" />
+            </div>
+            <h3 className="text-lg font-semibold text-text-primary mb-2">No tasks in Focus</h3>
+            <p className="text-text-secondary mb-6">
               Add ideas to Focus to start tracking your progress
             </p>
             <div className="flex gap-3 justify-center">
@@ -104,51 +96,49 @@ export function FocusClient({ activeTasks, completedToday }: FocusClientProps) {
                 </Button>
               </Link>
               <Link href="/projects">
-                <Button className="bg-orange-500 hover:bg-orange-600">
+                <Button variant="warning">
                   Browse Ideas
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </Link>
             </div>
           </Card>
-        </Block>
-      ) : (
-        <>
-          <BlockTitle>Active Tasks</BlockTitle>
-          <Block className="space-y-3">
-            {activeTasks.map((task) => (
-              <TaskTimerCard key={task.id} idea={task} />
-            ))}
-          </Block>
-        </>
-      )}
-
-      {/* Completed today */}
-      {completedToday.length > 0 && (
-        <>
-          <BlockTitle className="!mt-6">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-green-500" />
-              Completed Today ({completedToday.length})
+        ) : (
+          <div>
+            <h2 className="text-base font-semibold text-text-primary mb-3">Active Tasks</h2>
+            <div className="space-y-3">
+              {activeTasks.map((task) => (
+                <TaskTimerCard key={task.id} idea={task} />
+              ))}
             </div>
-          </BlockTitle>
-          <Block className="space-y-2">
-            {completedToday.map((task) => {
-              const isReopening = reopeningId === task.id;
-              return (
-                <Card
-                  key={task.id}
-                  className="p-3 bg-green-50 dark:bg-green-900/20 border-green-100 dark:border-green-900"
-                >
-                  <div className="flex items-center gap-3">
+          </div>
+        )}
+
+        {/* Completed today */}
+        {completedToday.length > 0 && (
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <CheckCircle2 className="w-5 h-5 text-success" />
+              <h2 className="text-base font-semibold text-text-primary">
+                Completed Today ({completedToday.length})
+              </h2>
+            </div>
+            <Card className="divide-y divide-border">
+              {completedToday.map((task) => {
+                const isReopening = reopeningId === task.id;
+                return (
+                  <div key={task.id} className="flex items-center gap-4 p-4">
                     <div
-                      className="w-1 h-8 rounded-full shrink-0"
-                      style={{ backgroundColor: task.project?.color ?? "#94a3b8" }}
-                    />
+                      className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: (task.project?.color ?? "#94a3b8") + "20" }}
+                    >
+                      <Lightbulb
+                        className="w-5 h-5"
+                        style={{ color: task.project?.color ?? "#94a3b8" }}
+                      />
+                    </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-bold text-slate-900 dark:text-slate-50 truncate">
-                        {task.title}
-                      </p>
+                      <p className="font-semibold text-text-primary truncate">{task.title}</p>
                       {task.project && (
                         <p className="text-xs font-medium" style={{ color: task.project.color }}>
                           {task.project.name}
@@ -161,7 +151,7 @@ export function FocusClient({ activeTasks, completedToday }: FocusClientProps) {
                     <Button
                       size="icon"
                       variant="ghost"
-                      className="h-8 w-8 text-slate-400 hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-950"
+                      className="h-9 w-9 text-text-muted hover:text-warning hover:bg-warning-light"
                       onClick={() => handleReopenTask(task)}
                       disabled={isReopening}
                       title="Reopen task"
@@ -169,12 +159,12 @@ export function FocusClient({ activeTasks, completedToday }: FocusClientProps) {
                       <RotateCcw className={`w-4 h-4 ${isReopening ? "animate-spin" : ""}`} />
                     </Button>
                   </div>
-                </Card>
-              );
-            })}
-          </Block>
-        </>
-      )}
+                );
+              })}
+            </Card>
+          </div>
+        )}
+      </div>
     </>
   );
 }

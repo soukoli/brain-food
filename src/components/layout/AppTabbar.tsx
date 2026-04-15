@@ -16,28 +16,40 @@ export function AppTabbar() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 flex h-16 border-t bg-white dark:bg-slate-950 safe-area-inset-bottom">
-      {NAV_ITEMS.map((item) => {
-        const IconComponent = item.Icon;
-        const isActive =
-          item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+    <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-4 safe-area-inset-bottom pointer-events-none">
+      <nav className="bg-primary-dark rounded-xl shadow-elevated pointer-events-auto">
+        <div className="flex items-center justify-around h-16">
+          {NAV_ITEMS.map((item) => {
+            const IconComponent = item.Icon;
+            const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
 
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={cn(
-              "flex flex-1 flex-col items-center justify-center min-h-[44px] transition-colors",
-              isActive
-                ? "text-blue-600 dark:text-blue-400"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-            )}
-          >
-            <IconComponent className="h-6 w-6" />
-            <span className="mt-1 text-xs font-medium">{item.label}</span>
-          </Link>
-        );
-      })}
-    </nav>
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "flex flex-col items-center justify-center w-16 h-full transition-all duration-200",
+                  isActive ? "text-info" : "text-text-muted hover:text-slate-300"
+                )}
+              >
+                <div
+                  className={cn(
+                    "flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-200",
+                    isActive && "bg-white/10"
+                  )}
+                >
+                  <IconComponent
+                    className={cn(
+                      "w-5 h-5 transition-transform duration-200",
+                      isActive && "scale-110"
+                    )}
+                  />
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
+    </div>
   );
 }

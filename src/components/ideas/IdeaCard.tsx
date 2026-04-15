@@ -15,7 +15,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Trash2, ExternalLink, Clock, Target, CheckCircle2 } from "lucide-react";
+import {
+  Trash2,
+  ExternalLink,
+  Clock,
+  Target,
+  CheckCircle2,
+  Lightbulb,
+  ChevronRight,
+} from "lucide-react";
 import { formatTime, formatRelativeTime } from "@/lib/utils";
 import { PRIORITIES } from "@/lib/constants";
 import { toast } from "sonner";
@@ -46,10 +54,8 @@ export function IdeaCard({
 
   const handleDragEnd = async (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     if (info.offset.x < -100) {
-      // Swipe left - delete
       setDeleteDialogOpen(true);
     } else if (info.offset.x > 100) {
-      // Swipe right - schedule for today
       await handleScheduleForToday();
     }
   };
@@ -114,7 +120,7 @@ export function IdeaCard({
 
   return (
     <>
-      <div className="relative overflow-hidden rounded-xl">
+      <div className="relative overflow-hidden rounded-lg">
         {/* Background indicators */}
         <motion.div
           className="absolute inset-0 flex items-center justify-between px-4 pointer-events-none"
@@ -122,14 +128,14 @@ export function IdeaCard({
         >
           <motion.div
             style={{ opacity: scheduleOpacity }}
-            className="flex items-center gap-2 text-white"
+            className="flex items-center gap-2 text-text-inverse"
           >
             <Target className="w-5 h-5" />
             <span className="font-medium">Focus</span>
           </motion.div>
           <motion.div
             style={{ opacity: deleteOpacity }}
-            className="flex items-center gap-2 text-white"
+            className="flex items-center gap-2 text-text-inverse"
           >
             <span className="font-medium">Delete</span>
             <Trash2 className="w-5 h-5" />
@@ -148,22 +154,25 @@ export function IdeaCard({
           <IdeaSheet
             idea={idea}
             trigger={
-              <Card className="p-4 cursor-pointer hover:shadow-md transition-shadow">
-                <div className="flex items-start gap-3">
-                  {/* Project color indicator - larger and more prominent */}
+              <Card className="p-4 cursor-pointer">
+                <div className="flex items-center gap-4">
+                  {/* Icon with project color */}
                   <div
-                    className="w-1.5 h-full min-h-[3rem] rounded-full shrink-0 self-stretch"
+                    className="w-12 h-12 rounded-full flex items-center justify-center shrink-0"
                     style={{
-                      backgroundColor: idea.project?.color ?? "#94a3b8",
+                      backgroundColor: (idea.project?.color ?? "#94a3b8") + "20",
                     }}
-                  />
+                  >
+                    <Lightbulb
+                      className="w-6 h-6"
+                      style={{ color: idea.project?.color ?? "#94a3b8" }}
+                    />
+                  </div>
 
                   <div className="flex-1 min-w-0">
-                    {/* Title with priority badge - BOLD */}
-                    <div className="flex items-start gap-2 flex-wrap">
-                      <h3 className="font-bold text-base text-slate-900 dark:text-slate-50 break-words">
-                        {idea.title}
-                      </h3>
+                    {/* Title with badges */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-semibold text-text-primary truncate">{idea.title}</h3>
                       {priorityInfo && (
                         <Badge
                           variant={
@@ -179,22 +188,14 @@ export function IdeaCard({
                         </Badge>
                       )}
                       {isScheduled && !isCompleted && (
-                        <Badge variant="default" className="shrink-0 bg-orange-500">
-                          <Target className="w-3 h-3 mr-1" />
+                        <Badge variant="default" className="shrink-0 bg-warning text-text-inverse">
                           Focus
                         </Badge>
                       )}
                     </div>
 
-                    {/* Description */}
-                    {idea.description && (
-                      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400 line-clamp-2">
-                        {idea.description}
-                      </p>
-                    )}
-
                     {/* Meta row */}
-                    <div className="mt-2 flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+                    <div className="mt-1 flex items-center gap-3 text-xs text-text-secondary">
                       {showProject && idea.project && (
                         <span className="font-medium" style={{ color: idea.project.color }}>
                           {idea.project.name}
@@ -211,22 +212,23 @@ export function IdeaCard({
                     </div>
                   </div>
 
-                  {/* Quick Focus button */}
-                  {showFocusButton && !isScheduled && !isCompleted && (
+                  {/* Right side action/indicator */}
+                  {showFocusButton && !isScheduled && !isCompleted ? (
                     <Button
                       size="icon"
                       variant="ghost"
-                      className="shrink-0 h-9 w-9 text-orange-500 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950"
+                      className="shrink-0 h-10 w-10 text-warning hover:text-warning hover:bg-warning-light"
                       onClick={handleScheduleForToday}
                       disabled={isScheduling}
                     >
                       <Target className="w-5 h-5" />
                     </Button>
-                  )}
-                  {isScheduled && !isCompleted && (
-                    <div className="shrink-0 h-9 w-9 flex items-center justify-center text-orange-500">
+                  ) : isScheduled && !isCompleted ? (
+                    <div className="shrink-0 h-10 w-10 flex items-center justify-center text-warning">
                       <CheckCircle2 className="w-5 h-5" />
                     </div>
+                  ) : (
+                    <ChevronRight className="w-5 h-5 text-text-muted shrink-0" />
                   )}
                 </div>
               </Card>

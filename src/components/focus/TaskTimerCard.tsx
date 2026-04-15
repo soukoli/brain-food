@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useTimer } from "@/hooks/useTimer";
-import { Play, Pause, Check, Clock } from "lucide-react";
+import { Play, Pause, Check, Clock, Lightbulb } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import type { IdeaWithProject } from "@/types";
@@ -37,7 +37,6 @@ export function TaskTimerCard({ idea }: TaskTimerCardProps) {
 
   // Sync with server state
   useEffect(() => {
-    // Calculate initial seconds including elapsed time if timer was running
     let total = idea.timeSpentSeconds;
     if (idea.isTimerRunning && idea.lastTimerStartedAt) {
       const elapsed = Math.floor((Date.now() - new Date(idea.lastTimerStartedAt).getTime()) / 1000);
@@ -88,20 +87,18 @@ export function TaskTimerCard({ idea }: TaskTimerCardProps) {
       }
 
       if (action === "complete") {
-        // Show toast with Undo button for accidental completions
         toast.success("Task completed!", {
           action: {
             label: "Undo",
             onClick: handleUndoComplete,
           },
-          duration: 5000, // 5 seconds to undo
+          duration: 5000,
         });
       }
 
       router.refresh();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "An error occurred");
-      // Revert optimistic update
       setIsRunning(idea.isTimerRunning);
     } finally {
       setIsUpdating(false);
@@ -109,7 +106,6 @@ export function TaskTimerCard({ idea }: TaskTimerCardProps) {
   };
 
   const handleToggleTimer = () => {
-    // Optimistic update
     setIsRunning(!isRunning);
     handleTimerAction(isRunning ? "pause" : "start");
   };
@@ -126,31 +122,26 @@ export function TaskTimerCard({ idea }: TaskTimerCardProps) {
     <Card
       className={cn(
         "p-4 transition-all duration-200",
-        isRunning && "ring-2 ring-orange-500 shadow-lg",
-        isOverThreshold && isRunning && "ring-red-500 bg-red-50 dark:bg-red-950/20"
+        isRunning && "ring-2 ring-warning shadow-elevated",
+        isOverThreshold && isRunning && "ring-error bg-error-light"
       )}
     >
-      <div className="flex items-start gap-3">
-        {/* Project color bar */}
+      <div className="flex items-start gap-4">
+        {/* Icon with project color */}
         <div
-          className="w-1.5 h-full min-h-[4rem] rounded-full shrink-0 self-stretch"
-          style={{ backgroundColor: idea.project?.color ?? "#94a3b8" }}
-        />
+          className="w-12 h-12 rounded-full flex items-center justify-center shrink-0"
+          style={{ backgroundColor: (idea.project?.color ?? "#94a3b8") + "20" }}
+        >
+          <Lightbulb className="w-6 h-6" style={{ color: idea.project?.color ?? "#94a3b8" }} />
+        </div>
 
         <div className="flex-1 min-w-0">
-          {/* Title - BOLD */}
-          <h3 className="font-bold text-base text-slate-900 dark:text-slate-50">{idea.title}</h3>
-
-          {/* Description */}
-          {idea.description && (
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400 line-clamp-1">
-              {idea.description}
-            </p>
-          )}
+          {/* Title */}
+          <h3 className="font-semibold text-text-primary">{idea.title}</h3>
 
           {/* Project name with color */}
           {idea.project && (
-            <p className="mt-1 text-xs font-medium" style={{ color: idea.project.color }}>
+            <p className="text-xs font-medium mt-0.5" style={{ color: idea.project.color }}>
               {idea.project.name}
             </p>
           )}
@@ -160,21 +151,14 @@ export function TaskTimerCard({ idea }: TaskTimerCardProps) {
             <div
               className={cn(
                 "text-2xl font-mono font-bold",
-                isRunning && "timer-running",
-                isOverThreshold
-                  ? "text-red-600"
-                  : isRunning
-                    ? "text-orange-600"
-                    : "text-slate-900 dark:text-slate-50"
+                isRunning && "animate-pulse",
+                isOverThreshold ? "text-error" : isRunning ? "text-warning" : "text-text-primary"
               )}
             >
               {formattedTime}
             </div>
             {isRunning && (
-              <Badge
-                variant={isOverThreshold ? "destructive" : "default"}
-                className={cn(!isOverThreshold && "bg-orange-500")}
-              >
+              <Badge variant={isOverThreshold ? "destructive" : "warning"}>
                 <Clock className="w-3 h-3 mr-1" />
                 {isOverThreshold ? "Over time!" : "Active"}
               </Badge>
@@ -185,10 +169,7 @@ export function TaskTimerCard({ idea }: TaskTimerCardProps) {
           <div className="mt-2">
             <Progress
               value={warningProgress}
-              className={cn(
-                "h-1.5",
-                isOverThreshold ? "[&>div]:bg-red-500" : "[&>div]:bg-orange-500"
-              )}
+              className={cn("h-1.5", isOverThreshold ? "[&>div]:bg-error" : "[&>div]:bg-warning")}
             />
           </div>
         </div>
@@ -197,15 +178,10 @@ export function TaskTimerCard({ idea }: TaskTimerCardProps) {
         <div className="flex flex-col gap-2 shrink-0">
           <Button
             size="icon"
-            variant={isRunning ? "secondary" : "default"}
+            variant={isRunning ? "secondary" : "warning"}
             onClick={handleToggleTimer}
             disabled={isUpdating}
-            className={cn(
-              "h-12 w-12 rounded-full",
-              !isRunning && "bg-orange-500 hover:bg-orange-600",
-              isRunning &&
-                "bg-orange-100 hover:bg-orange-200 dark:bg-orange-900 dark:hover:bg-orange-800"
-            )}
+            className="h-12 w-12 rounded-full"
           >
             {isRunning ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 ml-0.5" />}
           </Button>
@@ -214,7 +190,7 @@ export function TaskTimerCard({ idea }: TaskTimerCardProps) {
             variant="outline"
             onClick={handleComplete}
             disabled={isUpdating}
-            className="h-12 w-12 rounded-full text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900 border-green-200"
+            className="h-12 w-12 rounded-full text-success hover:text-success hover:bg-success-light border-success/30"
           >
             <Check className="h-5 w-5" />
           </Button>

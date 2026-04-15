@@ -4,7 +4,6 @@ import { ProjectCard } from "./ProjectCard";
 import { ProjectSheet } from "./ProjectSheet";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Block } from "@/components/ui/block";
 import { Plus, FolderOpen } from "lucide-react";
 import type { ProjectWithCount } from "@/types";
 
@@ -15,13 +14,13 @@ interface ProjectListProps {
 export function ProjectList({ projects }: ProjectListProps) {
   if (projects.length === 0) {
     return (
-      <Block>
+      <div className="px-4">
         <Card className="p-8 text-center">
-          <FolderOpen className="h-12 w-12 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-50 mb-2">
-            No projects yet
-          </h3>
-          <p className="text-slate-500 dark:text-slate-400 mb-4">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary-light flex items-center justify-center">
+            <FolderOpen className="h-8 w-8 text-primary" />
+          </div>
+          <h3 className="text-lg font-semibold text-text-primary mb-2">No projects yet</h3>
+          <p className="text-text-secondary mb-6">
             Create your first project to start organizing your ideas
           </p>
           <ProjectSheet
@@ -33,18 +32,15 @@ export function ProjectList({ projects }: ProjectListProps) {
             }
           />
         </Card>
-      </Block>
+      </div>
     );
   }
 
   return (
-    <Block>
-      {/* Grid layout for colorful project cards */}
-      <div className="grid grid-cols-2 gap-3">
-        {projects.map((project) => (
-          <ProjectCard key={project.id} project={project} />
-        ))}
-      </div>
-    </Block>
+    <div className="px-4 space-y-3">
+      {projects.map((project) => (
+        <ProjectCard key={project.id} project={project} />
+      ))}
+    </div>
   );
 }
