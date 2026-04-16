@@ -7,7 +7,6 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Block, BlockTitle } from "@/components/ui/block";
 import {
   Dialog,
   DialogContent,
@@ -25,6 +24,10 @@ import {
   CheckCircle2,
   AlertCircle,
   Clock,
+  ChevronRight,
+  Shield,
+  Bell,
+  HelpCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -65,7 +68,6 @@ export function SettingsClient({ user }: SettingsClientProps) {
       } else {
         const { error } = await response.json();
         if (error?.includes("access token")) {
-          // Need to re-authenticate
           setBackupInfo(null);
         }
       }
@@ -135,110 +137,142 @@ export function SettingsClient({ user }: SettingsClientProps) {
 
   return (
     <>
-      <PageHeader title="Settings" showBack />
+      <PageHeader title="Settings" />
 
-      {/* User Profile */}
-      <BlockTitle>Account</BlockTitle>
-      <Block>
-        <Card className="p-4">
-          <div className="flex items-center gap-4">
-            {user.image ? (
-              <img src={user.image} alt={user.name || "User"} className="w-14 h-14 rounded-full" />
-            ) : (
-              <div className="w-14 h-14 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
-                <User className="w-7 h-7 text-slate-500" />
-              </div>
-            )}
-            <div className="flex-1 min-w-0">
-              <h3 className="font-bold text-lg text-slate-900 dark:text-slate-50">
-                {user.name || "User"}
-              </h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400 truncate">{user.email}</p>
-            </div>
-          </div>
-        </Card>
-      </Block>
-
-      {/* Backup & Restore */}
-      <BlockTitle className="!mt-6">Backup & Restore</BlockTitle>
-      <Block className="space-y-3">
-        {/* Backup Status Card */}
-        <Card className="p-4">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h4 className="font-semibold text-slate-900 dark:text-slate-50">
-                Google Drive Backup
-              </h4>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                Your data is stored securely in your Google Drive
-              </p>
-            </div>
-            {isLoadingInfo ? (
-              <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
-            ) : backupInfo?.exists ? (
-              <Badge variant="success" className="gap-1">
-                <CheckCircle2 className="w-3 h-3" />
-                Backed up
-              </Badge>
-            ) : (
-              <Badge variant="secondary" className="gap-1">
-                <AlertCircle className="w-3 h-3" />
-                No backup
-              </Badge>
-            )}
-          </div>
-
-          {backupInfo?.lastBackup && (
-            <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mb-4">
-              <Clock className="w-4 h-4" />
-              Last backup: {formatDate(backupInfo.lastBackup)}
+      <div className="px-4 space-y-6 pb-4">
+        {/* User Profile Card */}
+        <Card className="p-6 text-center">
+          {user.image ? (
+            <img
+              src={user.image}
+              alt={user.name || "User"}
+              className="w-20 h-20 rounded-full mx-auto mb-3 border-4 border-primary-light"
+            />
+          ) : (
+            <div className="w-20 h-20 rounded-full bg-primary-light mx-auto mb-3 flex items-center justify-center">
+              <User className="w-10 h-10 text-primary" />
             </div>
           )}
-
-          <div className="grid grid-cols-2 gap-3">
-            <Button
-              onClick={handleBackup}
-              disabled={isBackingUp || isLoadingInfo}
-              className="gap-2"
-            >
-              {isBackingUp ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <CloudUpload className="w-4 h-4" />
-              )}
-              {isBackingUp ? "Backing up..." : "Backup Now"}
-            </Button>
-
-            <Button
-              variant="outline"
-              onClick={() => setRestoreDialogOpen(true)}
-              disabled={!backupInfo?.exists || isLoadingInfo}
-              className="gap-2"
-            >
-              <CloudDownload className="w-4 h-4" />
-              Restore
-            </Button>
-          </div>
+          <h2 className="text-xl font-bold text-text-primary">{user.name || "User"}</h2>
+          <p className="text-sm text-text-secondary">{user.email}</p>
         </Card>
 
-        {/* Info text */}
-        <p className="text-xs text-slate-500 dark:text-slate-400 px-1">
-          Backups include all your projects, ideas, and tags. They are stored in a private app
-          folder in your Google Drive that only BrainFood can access.
-        </p>
-      </Block>
+        {/* Account Settings Section */}
+        <div>
+          <h3 className="text-sm font-semibold text-text-secondary uppercase tracking-wide px-1 mb-3">
+            Account Settings
+          </h3>
+          <Card className="divide-y divide-border">
+            <SettingsRow
+              icon={<User className="w-5 h-5 text-primary" />}
+              label="Personal Information"
+              onClick={() => {}}
+            />
+            <SettingsRow
+              icon={<Shield className="w-5 h-5 text-success" />}
+              label="Privacy & Security"
+              onClick={() => {}}
+            />
+            <SettingsRow
+              icon={<Bell className="w-5 h-5 text-warning" />}
+              label="Notifications"
+              onClick={() => {}}
+            />
+          </Card>
+        </div>
 
-      {/* Sign Out */}
-      <Block className="!mt-8">
+        {/* Backup Section */}
+        <div>
+          <h3 className="text-sm font-semibold text-text-secondary uppercase tracking-wide px-1 mb-3">
+            Data & Backup
+          </h3>
+          <Card className="p-4">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-info-light flex items-center justify-center">
+                  <CloudUpload className="w-5 h-5 text-info" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-text-primary">Google Drive Backup</h4>
+                  <p className="text-xs text-text-secondary">Securely stored in your Drive</p>
+                </div>
+              </div>
+              {isLoadingInfo ? (
+                <Loader2 className="w-5 h-5 animate-spin text-text-muted" />
+              ) : backupInfo?.exists ? (
+                <Badge variant="success" className="gap-1">
+                  <CheckCircle2 className="w-3 h-3" />
+                  Synced
+                </Badge>
+              ) : (
+                <Badge variant="secondary" className="gap-1">
+                  <AlertCircle className="w-3 h-3" />
+                  Not backed up
+                </Badge>
+              )}
+            </div>
+
+            {backupInfo?.lastBackup && (
+              <div className="flex items-center gap-2 text-xs text-text-secondary mb-4 pl-13">
+                <Clock className="w-3.5 h-3.5" />
+                Last backup: {formatDate(backupInfo.lastBackup)}
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-3">
+              <Button
+                onClick={handleBackup}
+                disabled={isBackingUp || isLoadingInfo}
+                className="gap-2"
+              >
+                {isBackingUp ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <CloudUpload className="w-4 h-4" />
+                )}
+                {isBackingUp ? "Saving..." : "Backup"}
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={() => setRestoreDialogOpen(true)}
+                disabled={!backupInfo?.exists || isLoadingInfo}
+                className="gap-2"
+              >
+                <CloudDownload className="w-4 h-4" />
+                Restore
+              </Button>
+            </div>
+          </Card>
+        </div>
+
+        {/* Support Section */}
+        <div>
+          <h3 className="text-sm font-semibold text-text-secondary uppercase tracking-wide px-1 mb-3">
+            Support
+          </h3>
+          <Card className="divide-y divide-border">
+            <SettingsRow
+              icon={<HelpCircle className="w-5 h-5 text-text-muted" />}
+              label="Help Center"
+              onClick={() => {}}
+            />
+          </Card>
+        </div>
+
+        {/* Sign Out */}
         <Button
           variant="outline"
-          className="w-full gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+          className="w-full gap-2 text-error hover:text-error hover:bg-error-light border-error/30"
           onClick={handleSignOut}
         >
           <LogOut className="w-4 h-4" />
           Sign Out
         </Button>
-      </Block>
+
+        {/* App Version */}
+        <p className="text-center text-xs text-text-muted">BrainFood v0.1.0</p>
+      </div>
 
       {/* Restore Confirmation Dialog */}
       <Dialog open={restoreDialogOpen} onOpenChange={setRestoreDialogOpen}>
@@ -273,5 +307,32 @@ export function SettingsClient({ user }: SettingsClientProps) {
         </DialogContent>
       </Dialog>
     </>
+  );
+}
+
+// Settings row component matching Style A design
+function SettingsRow({
+  icon,
+  label,
+  onClick,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+  value?: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full flex items-center gap-4 p-4 hover:bg-background-secondary transition-colors duration-150 touch-manipulation"
+    >
+      <div className="w-10 h-10 rounded-full bg-background-secondary flex items-center justify-center shrink-0">
+        {icon}
+      </div>
+      <span className="flex-1 text-left font-medium text-text-primary">{label}</span>
+      {value && <span className="text-sm text-text-secondary">{value}</span>}
+      <ChevronRight className="w-5 h-5 text-text-muted shrink-0" />
+    </button>
   );
 }
