@@ -22,17 +22,36 @@ import type { Project } from "@/lib/db/schema";
 
 interface ProjectSheetProps {
   project?: Project;
-  trigger: React.ReactNode;
+  trigger?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   onSuccess?: () => void;
 }
 
-export function ProjectSheet({ project, trigger, onSuccess }: ProjectSheetProps) {
+export function ProjectSheet({
+  project,
+  trigger,
+  open: controlledOpen,
+  onOpenChange,
+  onSuccess,
+}: ProjectSheetProps) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [name, setName] = useState(project?.name ?? "");
   const [description, setDescription] = useState(project?.description ?? "");
   const [color, setColor] = useState(project?.color ?? PROJECT_COLORS[0].value);
+
+  // Use controlled or uncontrolled mode
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = (value: boolean) => {
+    if (isControlled) {
+      onOpenChange?.(value);
+    } else {
+      setInternalOpen(value);
+    }
+  };
 
   const isEdit = !!project;
 
@@ -83,22 +102,18 @@ export function ProjectSheet({ project, trigger, onSuccess }: ProjectSheetProps)
 
   return (
     <Drawer open={open} onOpenChange={setOpen}>
-      <DrawerTrigger asChild>{trigger}</DrawerTrigger>
+      {trigger && <DrawerTrigger asChild>{trigger}</DrawerTrigger>}
       <DrawerContent>
         <DrawerHeader>
           <DrawerTitle>{isEdit ? "Edit Project" : "New Project"}</DrawerTitle>
           <DrawerDescription>
-            {isEdit
-              ? "Update your project details"
-              : "Create a new project to organize your ideas"}
+            {isEdit ? "Update your project details" : "Create a new project to organize your ideas"}
           </DrawerDescription>
         </DrawerHeader>
 
         <div className="px-4 space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-              Name
-            </label>
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Name</label>
             <Input
               placeholder="Project name"
               value={name}
@@ -120,9 +135,7 @@ export function ProjectSheet({ project, trigger, onSuccess }: ProjectSheetProps)
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-              Color
-            </label>
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Color</label>
             <ColorPicker value={color} onChange={setColor} />
           </div>
         </div>

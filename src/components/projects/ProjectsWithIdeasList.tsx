@@ -23,7 +23,16 @@ import {
   Inbox,
   Lightbulb,
   LinkIcon,
+  MoreVertical,
+  Pencil,
+  Trash2,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { formatTime } from "@/lib/utils";
 import { PRIORITIES } from "@/lib/constants";
 import { toast } from "sonner";
@@ -110,6 +119,7 @@ export function ProjectsWithIdeasList({ projects, orphanIdeas = [] }: ProjectsWi
   const router = useRouter();
   const [schedulingId, setSchedulingId] = useState<string | null>(null);
   const [removingFromFocusId, setRemovingFromFocusId] = useState<string | null>(null);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
   // Track collapsed state per project (default: ALL collapsed)
   const [collapsedProjects, setCollapsedProjects] = useState<Set<string>>(
     () => new Set(projects.map((p) => p.id))
@@ -198,6 +208,27 @@ export function ProjectsWithIdeasList({ projects, orphanIdeas = [] }: ProjectsWi
       toast.error("Failed to remove from Focus");
     } finally {
       setRemovingFromFocusId(null);
+    }
+  };
+
+  const handleDeleteProject = async (projectId: string, projectName: string) => {
+    if (!confirm(`Delete "${projectName}" and all its ideas?`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/projects/${projectId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete project");
+      }
+
+      toast.success("Project deleted");
+      router.refresh();
+    } catch {
+      toast.error("Failed to delete project");
     }
   };
 
@@ -404,11 +435,39 @@ export function ProjectsWithIdeasList({ projects, orphanIdeas = [] }: ProjectsWi
                 </p>
               </div>
 
-              {/* Badges and chevron */}
-              <div className="flex items-center gap-2 shrink-0">
+              {/* Badges, menu and chevron */}
+              <div className="flex items-center gap-1 shrink-0">
                 {focusCount > 0 && (
                   <Badge className="bg-warning text-text-inverse text-xs px-2">{focusCount}</Badge>
                 )}
+
+                {/* Project menu */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-text-muted"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <MoreVertical className="w-4 h-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setEditingProject(project)}>
+                      <Pencil className="w-4 h-4 mr-2" />
+                      Edit project
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handleDeleteProject(project.id, project.name)}
+                      className="text-error focus:text-error"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete project
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
                 {isCollapsed ? (
                   <ChevronRight className="w-5 h-5 text-text-muted" />
                 ) : (
@@ -472,6 +531,15 @@ export function ProjectsWithIdeasList({ projects, orphanIdeas = [] }: ProjectsWi
             </div>
           )}
         </Card>
+      )}
+
+      {/* Edit project sheet */}
+      {editingProject && (
+        <ProjectSheet
+          project={editingProject}
+          open={!!editingProject}
+          onOpenChange={(open) => !open && setEditingProject(null)}
+        />
       )}
     </div>
   );
