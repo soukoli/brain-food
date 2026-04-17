@@ -5,22 +5,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  Zap,
-  Calendar,
-  FolderOpen,
-  Lightbulb,
-  ChevronRight,
-  Target,
-  Quote,
-  RefreshCw,
-  X,
-} from "lucide-react";
+import { Zap, Target, Quote, RefreshCw, X, Lightbulb, Sparkles, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import type { IdeaWithProject, DashboardStats } from "@/types";
 
 interface DashboardClientProps {
+  userName: string;
   stats: DashboardStats;
   recentIdeas: IdeaWithProject[];
 }
@@ -30,7 +21,7 @@ interface QuoteData {
   author: string;
 }
 
-export function DashboardClient({ stats, recentIdeas }: DashboardClientProps) {
+export function DashboardClient({ userName, stats, recentIdeas }: DashboardClientProps) {
   const router = useRouter();
   const [quote, setQuote] = useState<QuoteData | null>(null);
   const [isLoadingQuote, setIsLoadingQuote] = useState(true);
@@ -110,8 +101,18 @@ export function DashboardClient({ stats, recentIdeas }: DashboardClientProps) {
   };
 
   return (
-    <div className="px-4 pb-4 space-y-4">
-      {/* Inspirational Quote - Dismissible */}
+    <div className="px-4 pt-6 pb-4 space-y-5">
+      {/* Header with greeting */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-normal text-text-primary">
+          Hello <span className="font-bold">{userName},</span>
+        </h1>
+        <Button variant="ghost" size="icon" className="w-10 h-10 rounded-xl border border-border">
+          <Sparkles className="w-5 h-5 text-primary" />
+        </Button>
+      </div>
+
+      {/* Quote Card - styled like "Total Balance" card */}
       <AnimatePresence>
         {isQuoteVisible && (
           <motion.div
@@ -120,48 +121,46 @@ export function DashboardClient({ stats, recentIdeas }: DashboardClientProps) {
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.2 }}
           >
-            <Card className="p-4 bg-gradient-to-br from-primary-light to-info-light border-none">
-              <div className="flex items-start gap-3">
-                <div className="shrink-0 mt-0.5 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Quote className="w-4 h-4 text-primary" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  {isLoadingQuote ? (
-                    <div className="space-y-2 animate-pulse">
-                      <div className="h-4 bg-border rounded w-3/4"></div>
-                      <div className="h-4 bg-border rounded w-1/2"></div>
-                    </div>
-                  ) : quote ? (
-                    <>
-                      <p className="text-sm font-medium text-text-primary italic leading-relaxed">
-                        &ldquo;{quote.quote}&rdquo;
-                      </p>
-                      <p className="mt-2 text-xs font-semibold text-primary">— {quote.author}</p>
-                    </>
-                  ) : (
-                    <p className="text-sm text-text-secondary">Start your day with purpose</p>
-                  )}
-                </div>
-                <div className="shrink-0 flex flex-col gap-1">
+            <Card className="p-5 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border-none shadow-sm">
+              <div className="flex items-start justify-between mb-3">
+                <span className="text-xs font-medium text-text-secondary uppercase tracking-wider">
+                  Daily Inspiration
+                </span>
+                <div className="flex items-center gap-1">
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="h-8 w-8 text-text-muted hover:text-text-primary"
-                    onClick={handleDismissQuote}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-8 w-8 text-text-muted hover:text-primary"
+                    className="h-7 w-7 text-text-muted hover:text-primary"
                     onClick={fetchQuote}
                     disabled={isLoadingQuote}
                   >
-                    <RefreshCw className={`w-4 h-4 ${isLoadingQuote ? "animate-spin" : ""}`} />
+                    <RefreshCw className={`w-3.5 h-3.5 ${isLoadingQuote ? "animate-spin" : ""}`} />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7 text-text-muted hover:text-text-primary"
+                    onClick={handleDismissQuote}
+                  >
+                    <X className="w-3.5 h-3.5" />
                   </Button>
                 </div>
               </div>
+              {isLoadingQuote ? (
+                <div className="space-y-2 animate-pulse">
+                  <div className="h-5 bg-border rounded w-3/4"></div>
+                  <div className="h-5 bg-border rounded w-1/2"></div>
+                </div>
+              ) : quote ? (
+                <>
+                  <p className="text-lg font-medium text-text-primary leading-relaxed">
+                    &ldquo;{quote.quote}&rdquo;
+                  </p>
+                  <p className="mt-2 text-sm text-text-secondary">— {quote.author}</p>
+                </>
+              ) : (
+                <p className="text-lg text-text-secondary">Start your day with purpose</p>
+              )}
             </Card>
           </motion.div>
         )}
@@ -180,159 +179,115 @@ export function DashboardClient({ stats, recentIdeas }: DashboardClientProps) {
         </Button>
       )}
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-2 gap-3">
-        <Link href="/capture" className="block">
-          <Button size="lg" className="w-full h-14 text-base gap-2">
-            <Zap className="h-5 w-5" />
-            Quick Capture
-          </Button>
-        </Link>
-        <Link href="/focus" className="block">
-          <Button size="lg" variant="warning" className="w-full h-14 text-base gap-2">
-            <Target className="h-5 w-5" />
-            Focus
-            {stats.inProgressCount > 0 && (
-              <span className="ml-1 px-2 py-0.5 text-xs font-medium bg-white/20 rounded-full">
-                {stats.inProgressCount}
-              </span>
-            )}
-          </Button>
-        </Link>
-      </div>
-
-      {/* Stats Row */}
-      <div className="grid grid-cols-3 gap-3">
-        <Link href="/focus" className="block">
-          <Card className="p-4 text-center">
-            <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-warning-light flex items-center justify-center">
-              <Calendar className="h-5 w-5 text-warning" />
-            </div>
-            <p className="text-2xl font-bold text-text-primary">{stats.todayCount}</p>
-            <p className="text-xs text-text-secondary mt-1">Today</p>
-          </Card>
-        </Link>
-
-        <Link href="/projects" className="block">
-          <Card className="p-4 text-center">
-            <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-primary-light flex items-center justify-center">
-              <FolderOpen className="h-5 w-5 text-primary" />
-            </div>
+      {/* Stats Card - Projects, Ideas, Focus */}
+      <Card className="p-5">
+        <div className="grid grid-cols-3 divide-x divide-border">
+          <Link href="/projects" className="pr-3 text-center">
+            <p className="text-xs text-text-secondary mb-1">Projects</p>
             <p className="text-2xl font-bold text-text-primary">{stats.projectCount}</p>
-            <p className="text-xs text-text-secondary mt-1">Projects</p>
-          </Card>
-        </Link>
-
-        <Card className="p-4 text-center">
-          <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-warning-light flex items-center justify-center">
-            <Lightbulb className="h-5 w-5 text-warning" />
-          </div>
-          <p className="text-2xl font-bold text-text-primary">{stats.totalIdeas}</p>
-          <p className="text-xs text-text-secondary mt-1">Ideas</p>
-        </Card>
-      </div>
+          </Link>
+          <Link href="/projects" className="px-3 text-center">
+            <p className="text-xs text-text-secondary mb-1">Ideas</p>
+            <p className="text-2xl font-bold text-text-primary">{stats.totalIdeas}</p>
+          </Link>
+          <Link href="/focus" className="pl-3 text-center">
+            <p className="text-xs text-text-secondary mb-1">Focus</p>
+            <p className="text-2xl font-bold text-text-primary">{stats.todayCount}</p>
+            {stats.inProgressCount > 0 && (
+              <p className="text-xs text-success mt-0.5">{stats.inProgressCount} active</p>
+            )}
+          </Link>
+        </div>
+      </Card>
 
       {/* Recent Ideas Section */}
       <div>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-base font-semibold text-text-primary">Recent Ideas</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-text-primary">Recent Ideas</h2>
           <Link
             href="/projects"
-            className="text-sm text-primary font-medium flex items-center gap-1"
+            className="text-sm text-text-primary font-medium flex items-center gap-1"
           >
-            View all
+            See All
             <ChevronRight className="w-4 h-4" />
           </Link>
         </div>
 
         {recentIdeas.length === 0 ? (
           <Card className="p-8 text-center">
-            <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-warning-light flex items-center justify-center">
-              <Lightbulb className="h-6 w-6 text-warning" />
+            <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-primary-light flex items-center justify-center">
+              <Lightbulb className="h-6 w-6 text-primary" />
             </div>
             <p className="text-text-secondary mb-4">No ideas yet. Capture your first thought!</p>
             <Link href="/capture">
               <Button size="sm">
                 <Zap className="h-4 w-4 mr-2" />
-                Capture
+                Capture Idea
               </Button>
             </Link>
           </Card>
         ) : (
-          <Card className="divide-y divide-border">
-            {recentIdeas.map((idea) => {
+          <div className="space-y-3">
+            {recentIdeas.slice(0, 4).map((idea) => {
               const isScheduled = !!idea.scheduledForToday;
               const isCompleted = idea.status === "completed";
+              const projectColor = idea.project?.color ?? "#94a3b8";
 
               return (
-                <div
-                  key={idea.id}
-                  className="flex items-center gap-3 p-4 hover:bg-background-secondary transition-colors duration-200"
-                >
-                  {/* Project color indicator as circle */}
-                  <div
-                    className="w-10 h-10 rounded-full shrink-0 flex items-center justify-center"
-                    style={{
-                      backgroundColor: (idea.project?.color ?? "#94a3b8") + "20",
-                    }}
-                  >
-                    <Lightbulb
-                      className="w-5 h-5"
-                      style={{ color: idea.project?.color ?? "#94a3b8" }}
-                    />
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-text-primary truncate">{idea.title}</p>
-                    {idea.project && (
-                      <p
-                        className="text-xs font-medium mt-0.5"
-                        style={{ color: idea.project.color }}
+                <Card key={idea.id} className="p-4">
+                  <div className="flex items-center gap-4">
+                    {/* Icon with circular progress indicator */}
+                    <div className="relative">
+                      <div
+                        className="w-12 h-12 rounded-full flex items-center justify-center"
+                        style={{ backgroundColor: projectColor + "15" }}
                       >
-                        {idea.project.name}
-                      </p>
+                        <Lightbulb className="w-5 h-5" style={{ color: projectColor }} />
+                      </div>
+                      {/* Progress ring - shows if scheduled */}
+                      {isScheduled && (
+                        <svg className="absolute inset-0 w-12 h-12 -rotate-90">
+                          <circle
+                            cx="24"
+                            cy="24"
+                            r="22"
+                            fill="none"
+                            stroke={isCompleted ? "#22c55e" : projectColor}
+                            strokeWidth="3"
+                            strokeDasharray={isCompleted ? "138" : "69"}
+                            strokeDashoffset="0"
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                      )}
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-text-primary truncate">{idea.title}</p>
+                      {idea.project && (
+                        <p className="text-sm text-text-secondary mt-0.5">{idea.project.name}</p>
+                      )}
+                    </div>
+
+                    {/* Quick Focus button */}
+                    {!isScheduled && !isCompleted && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="shrink-0 h-9 w-9 text-warning hover:text-warning hover:bg-warning-light"
+                        onClick={(e) => handleScheduleForFocus(idea, e)}
+                      >
+                        <Target className="w-5 h-5" />
+                      </Button>
                     )}
                   </div>
-
-                  {/* Quick Focus button or indicator */}
-                  {!isScheduled && !isCompleted ? (
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="shrink-0 h-9 w-9 text-warning hover:text-warning hover:bg-warning-light"
-                      onClick={(e) => handleScheduleForFocus(idea, e)}
-                    >
-                      <Target className="w-5 h-5" />
-                    </Button>
-                  ) : isScheduled && !isCompleted ? (
-                    <div className="shrink-0 h-9 w-9 flex items-center justify-center">
-                      <Target className="w-5 h-5 text-warning fill-warning" />
-                    </div>
-                  ) : (
-                    <ChevronRight className="w-5 h-5 text-text-muted shrink-0" />
-                  )}
-                </div>
+                </Card>
               );
             })}
-          </Card>
+          </div>
         )}
       </div>
-
-      {/* View All Projects Link */}
-      <Card className="p-4 hover:shadow-card-hover transition-all duration-200">
-        <Link href="/projects" className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-primary-light flex items-center justify-center">
-            <FolderOpen className="h-6 w-6 text-primary" />
-          </div>
-          <div className="flex-1">
-            <p className="font-semibold text-text-primary">View All Projects</p>
-            <p className="text-sm text-text-secondary">
-              {stats.projectCount} project{stats.projectCount !== 1 ? "s" : ""}
-            </p>
-          </div>
-          <ChevronRight className="h-5 w-5 text-text-muted" />
-        </Link>
-      </Card>
     </div>
   );
 }

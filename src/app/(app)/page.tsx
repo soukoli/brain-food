@@ -3,7 +3,6 @@ import { projects, ideas } from "@/lib/db/schema";
 import { eq, desc, and, isNotNull, gte, lt, count } from "drizzle-orm";
 import { getRequiredUser } from "@/lib/auth-utils";
 import { DashboardClient } from "@/components/dashboard/DashboardClient";
-import { PageHeader } from "@/components/layout/PageHeader";
 
 export const dynamic = "force-dynamic";
 
@@ -67,18 +66,19 @@ export default async function DashboardPage() {
     }),
   ]);
 
+  // Extract first name from user
+  const firstName = user.name?.split(" ")[0] || "there";
+
   return (
-    <>
-      <PageHeader title="BrainFood" />
-      <DashboardClient
-        stats={{
-          projectCount: projectCountResult[0]?.value ?? 0,
-          todayCount: todayCountResult[0]?.value ?? 0,
-          totalIdeas: totalIdeasResult[0]?.value ?? 0,
-          inProgressCount: inProgressCountResult[0]?.value ?? 0,
-        }}
-        recentIdeas={recentIdeas}
-      />
-    </>
+    <DashboardClient
+      userName={firstName}
+      stats={{
+        projectCount: projectCountResult[0]?.value ?? 0,
+        todayCount: todayCountResult[0]?.value ?? 0,
+        totalIdeas: totalIdeasResult[0]?.value ?? 0,
+        inProgressCount: inProgressCountResult[0]?.value ?? 0,
+      }}
+      recentIdeas={recentIdeas}
+    />
   );
 }

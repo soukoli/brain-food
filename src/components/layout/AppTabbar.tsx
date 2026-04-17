@@ -2,16 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Folder, Target, Plus, Settings } from "lucide-react";
+import { Home, Calendar, Crosshair, Plus, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCallback, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 const NAV_ITEMS = [
   { href: "/", label: "Home", Icon: Home },
-  { href: "/projects", label: "Projects", Icon: Folder },
-  { href: "/focus", label: "Focus", Icon: Target },
-  { href: "/capture", label: "Capture", Icon: Plus },
+  { href: "/projects", label: "Projects", Icon: Calendar },
+  { href: "/focus", label: "Focus", Icon: Crosshair },
+  { href: "/capture", label: "Capture", Icon: Plus, isMain: true },
   { href: "/settings", label: "Settings", Icon: Settings },
 ] as const;
 
@@ -45,14 +45,33 @@ export function AppTabbar() {
     <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-4 safe-area-inset-bottom pointer-events-none">
       <nav
         className={cn(
-          "bg-primary-dark rounded-xl shadow-elevated pointer-events-auto transition-opacity duration-150",
+          "bg-surface rounded-2xl shadow-elevated pointer-events-auto transition-opacity duration-150 border border-border",
           isPending && "opacity-90"
         )}
       >
-        <div className="flex items-center justify-around h-16">
+        <div className="flex items-center justify-around h-14">
           {NAV_ITEMS.map((item) => {
             const IconComponent = item.Icon;
             const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+            const isMainButton = "isMain" in item && item.isMain;
+
+            if (isMainButton) {
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={(e) => handleNavigation(item.href, e)}
+                  onMouseEnter={() => handlePrefetch(item.href)}
+                  onTouchStart={() => handlePrefetch(item.href)}
+                  prefetch={true}
+                  className="flex items-center justify-center -mt-4 touch-manipulation active:scale-95"
+                >
+                  <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center shadow-elevated">
+                    <IconComponent className="w-6 h-6 text-white" />
+                  </div>
+                </Link>
+              );
+            }
 
             return (
               <Link
@@ -63,21 +82,17 @@ export function AppTabbar() {
                 onTouchStart={() => handlePrefetch(item.href)}
                 prefetch={true}
                 className={cn(
-                  "flex flex-col items-center justify-center w-14 h-full transition-all duration-150",
+                  "flex items-center justify-center w-12 h-12 transition-all duration-150",
                   "active:scale-95 touch-manipulation",
-                  isActive ? "text-info" : "text-text-muted hover:text-slate-300"
+                  isActive ? "text-text-primary" : "text-text-muted hover:text-text-secondary"
                 )}
               >
-                <div
+                <IconComponent
                   className={cn(
-                    "flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-150",
-                    isActive && "bg-white/15 shadow-sm"
+                    "w-6 h-6 transition-all duration-150",
+                    isActive && "stroke-[2.5px]"
                   )}
-                >
-                  <IconComponent
-                    className={cn("w-5 h-5 transition-all duration-150", isActive && "scale-110")}
-                  />
-                </div>
+                />
               </Link>
             );
           })}

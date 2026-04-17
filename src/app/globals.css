@@ -5,13 +5,13 @@
 :root {
   /* Design System - Brain Food */
 
-  /* Primary Colors */
-  --primary: #2563eb;
-  --primary-dark: #1e3a5f;
-  --primary-light: #eff6ff;
-  --primary-hover: #1d4ed8;
+  /* Primary Colors - Updated to match reference (purple-blue) */
+  --primary: #6366f1;
+  --primary-dark: #4338ca;
+  --primary-light: #eef2ff;
+  --primary-hover: #4f46e5;
 
-  /* Neutral Colors */
+  /* Neutral Colors - Lighter overall */
   --background: #f8fafc;
   --background-secondary: #f1f5f9;
   --surface: #ffffff;
@@ -31,8 +31,8 @@
   --warning-light: #fff7ed;
   --error: #ef4444;
   --error-light: #fee2e2;
-  --info: #0ea5e9;
-  --info-light: #e0f2fe;
+  --info: #6366f1;
+  --info-light: #eef2ff;
 
   /* Shadows */
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
@@ -59,29 +59,28 @@
   --foreground: var(--text-primary);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0f172a;
-    --background-secondary: #1e293b;
-    --surface: #1e293b;
-    --border: #334155;
-    --border-light: #1e293b;
+/* Dark mode - class-based for manual toggle */
+.dark {
+  --background: #0f172a;
+  --background-secondary: #1e293b;
+  --surface: #1e293b;
+  --border: #334155;
+  --border-light: #1e293b;
 
-    --text-primary: #f1f5f9;
-    --text-secondary: #94a3b8;
-    --text-muted: #64748b;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
 
-    --primary-light: #1e3a5f;
-    --success-light: #14532d;
-    --warning-light: #431407;
-    --error-light: #450a0a;
-    --info-light: #0c4a6e;
+  --primary-light: #312e81;
+  --success-light: #14532d;
+  --warning-light: #431407;
+  --error-light: #450a0a;
+  --info-light: #312e81;
 
-    --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.3);
-    --shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2);
-    --shadow-elevated: 0 8px 30px rgba(0, 0, 0, 0.4), 0 4px 8px rgba(0, 0, 0, 0.3);
-    --shadow-tabbar: 0 -4px 20px rgba(0, 0, 0, 0.3), 0 -2px 6px rgba(0, 0, 0, 0.2);
-  }
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2);
+  --shadow-elevated: 0 8px 30px rgba(0, 0, 0, 0.4), 0 4px 8px rgba(0, 0, 0, 0.3);
+  --shadow-tabbar: 0 -4px 20px rgba(0, 0, 0, 0.3), 0 -2px 6px rgba(0, 0, 0, 0.2);
 }
 
 body {

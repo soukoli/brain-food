@@ -5,7 +5,6 @@ import { getRequiredUser } from "@/lib/auth-utils";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ProjectsWithIdeasList } from "@/components/projects/ProjectsWithIdeasList";
 import { ProjectSheet } from "@/components/projects/ProjectSheet";
-import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -27,23 +26,20 @@ export default async function ProjectsPage() {
 
   // Get orphan ideas (ideas without a project)
   const orphanIdeas = await db.query.ideas.findMany({
-    where: and(
-      eq(ideas.userId, user.id),
-      isNull(ideas.projectId)
-    ),
+    where: and(eq(ideas.userId, user.id), isNull(ideas.projectId)),
     orderBy: [desc(ideas.createdAt)],
   });
 
   return (
     <>
       <PageHeader
-        title="Projects"
+        title="My Projects"
         right={
           <ProjectSheet
             trigger={
-              <Button size="icon" variant="ghost">
-                <Plus className="h-5 w-5" />
-              </Button>
+              <button className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shadow-sm hover:bg-primary-hover transition-colors">
+                <Plus className="h-5 w-5 text-white" />
+              </button>
             }
           />
         }

@@ -28,8 +28,13 @@ import {
   Shield,
   Bell,
   HelpCircle,
+  Sun,
+  Moon,
+  Monitor,
+  Palette,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useTheme } from "@/components/providers/ThemeProvider";
 
 interface SettingsClientProps {
   user: {
@@ -47,6 +52,7 @@ interface BackupInfo {
 
 export function SettingsClient({ user }: SettingsClientProps) {
   const router = useRouter();
+  const { theme, setTheme, resolvedTheme } = useTheme();
   const [backupInfo, setBackupInfo] = useState<BackupInfo | null>(null);
   const [isLoadingInfo, setIsLoadingInfo] = useState(true);
   const [isBackingUp, setIsBackingUp] = useState(false);
@@ -156,6 +162,47 @@ export function SettingsClient({ user }: SettingsClientProps) {
           <h2 className="text-xl font-bold text-text-primary">{user.name || "User"}</h2>
           <p className="text-sm text-text-secondary">{user.email}</p>
         </Card>
+
+        {/* Appearance Section */}
+        <div>
+          <h3 className="text-sm font-semibold text-text-secondary uppercase tracking-wide px-1 mb-3">
+            Appearance
+          </h3>
+          <Card className="p-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-primary-light flex items-center justify-center">
+                <Palette className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h4 className="font-semibold text-text-primary">Theme</h4>
+                <p className="text-xs text-text-secondary">
+                  Currently: {resolvedTheme === "dark" ? "Dark" : "Light"} mode
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              <ThemeButton
+                active={theme === "light"}
+                onClick={() => setTheme("light")}
+                icon={<Sun className="w-5 h-5" />}
+                label="Light"
+              />
+              <ThemeButton
+                active={theme === "dark"}
+                onClick={() => setTheme("dark")}
+                icon={<Moon className="w-5 h-5" />}
+                label="Dark"
+              />
+              <ThemeButton
+                active={theme === "system"}
+                onClick={() => setTheme("system")}
+                icon={<Monitor className="w-5 h-5" />}
+                label="System"
+              />
+            </div>
+          </Card>
+        </div>
 
         {/* Account Settings Section */}
         <div>
@@ -333,6 +380,33 @@ function SettingsRow({
       <span className="flex-1 text-left font-medium text-text-primary">{label}</span>
       {value && <span className="text-sm text-text-secondary">{value}</span>}
       <ChevronRight className="w-5 h-5 text-text-muted shrink-0" />
+    </button>
+  );
+}
+
+// Theme toggle button component
+function ThemeButton({
+  active,
+  onClick,
+  icon,
+  label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all duration-150 ${
+        active
+          ? "border-primary bg-primary-light text-primary"
+          : "border-border bg-surface text-text-secondary hover:border-primary/50"
+      }`}
+    >
+      {icon}
+      <span className="text-xs font-medium">{label}</span>
     </button>
   );
 }

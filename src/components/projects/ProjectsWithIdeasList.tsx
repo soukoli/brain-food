@@ -22,7 +22,6 @@ import {
   Flame,
   Inbox,
   Lightbulb,
-  Folder,
 } from "lucide-react";
 import { formatTime } from "@/lib/utils";
 import { PRIORITIES } from "@/lib/constants";
@@ -53,6 +52,57 @@ function sortIdeasByPriority(ideas: Idea[]): Idea[] {
     }
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
+}
+
+// Calculate project progress (completed / total)
+function calculateProgress(ideas: Idea[]): number {
+  if (ideas.length === 0) return 0;
+  const completed = ideas.filter((i) => i.status === "completed").length;
+  return Math.round((completed / ideas.length) * 100);
+}
+
+// Circular progress component
+function CircularProgress({
+  progress,
+  color,
+  size = 48,
+}: {
+  progress: number;
+  color: string;
+  size?: number;
+}) {
+  const strokeWidth = 3;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const offset = circumference - (progress / 100) * circumference;
+
+  return (
+    <svg className="absolute inset-0" width={size} height={size}>
+      {/* Background circle */}
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={radius}
+        fill="none"
+        stroke={color + "30"}
+        strokeWidth={strokeWidth}
+      />
+      {/* Progress circle */}
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={radius}
+        fill="none"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeDasharray={circumference}
+        strokeDashoffset={offset}
+        strokeLinecap="round"
+        transform={`rotate(-90 ${size / 2} ${size / 2})`}
+        className="transition-all duration-500"
+      />
+    </svg>
+  );
 }
 
 export function ProjectsWithIdeasList({ projects, orphanIdeas = [] }: ProjectsWithIdeasListProps) {
@@ -293,20 +343,27 @@ export function ProjectsWithIdeasList({ projects, orphanIdeas = [] }: ProjectsWi
         const focusCount = sortedIdeas.filter(
           (i) => i.scheduledForToday && i.status !== "completed"
         ).length;
+        const progress = calculateProgress(project.ideas);
+        const firstLetter = project.name.charAt(0).toUpperCase();
 
         return (
-          <div key={project.id}>
-            {/* Project Header - New design */}
+          <Card key={project.id} className="overflow-hidden">
+            {/* Project Header - New design with first letter icon and progress */}
             <div
-              className="flex items-center gap-4 p-4 bg-surface rounded-lg border border-border shadow-card hover:shadow-card-hover transition-all cursor-pointer"
+              className="flex items-center gap-4 p-4 cursor-pointer hover:bg-background-secondary/50 transition-colors"
               onClick={(e) => toggleProjectCollapse(project.id, e)}
             >
-              {/* Icon with project color */}
-              <div
-                className="w-12 h-12 rounded-full flex items-center justify-center shrink-0"
-                style={{ backgroundColor: project.color + "20" }}
-              >
-                <Folder className="w-6 h-6" style={{ color: project.color }} />
+              {/* Icon with first letter and circular progress */}
+              <div className="relative w-12 h-12 shrink-0">
+                <CircularProgress progress={progress} color={project.color} size={48} />
+                <div
+                  className="absolute inset-1 rounded-full flex items-center justify-center"
+                  style={{ backgroundColor: project.color + "20" }}
+                >
+                  <span className="text-lg font-bold" style={{ color: project.color }}>
+                    {firstLetter}
+                  </span>
+                </div>
               </div>
 
               {/* Project info */}
@@ -315,11 +372,10 @@ export function ProjectsWithIdeasList({ projects, orphanIdeas = [] }: ProjectsWi
                   <h3 className="font-semibold text-text-primary truncate">{project.name}</h3>
                   {hasUrgent && <Flame className="w-4 h-4 text-error shrink-0" />}
                 </div>
-                {project.description && (
-                  <p className="text-sm text-text-secondary truncate mt-0.5">
-                    {project.description}
-                  </p>
-                )}
+                <p className="text-sm text-text-secondary mt-0.5">
+                  {project.ideas.length} {project.ideas.length === 1 ? "idea" : "ideas"}
+                  {progress > 0 && ` • ${progress}% done`}
+                </p>
               </div>
 
               {/* Badges and chevron */}
@@ -327,13 +383,6 @@ export function ProjectsWithIdeasList({ projects, orphanIdeas = [] }: ProjectsWi
                 {focusCount > 0 && (
                   <Badge className="bg-warning text-text-inverse text-xs px-2">{focusCount}</Badge>
                 )}
-                <Badge
-                  variant="secondary"
-                  className="text-xs px-2"
-                  style={{ backgroundColor: project.color + "15", color: project.color }}
-                >
-                  {project.ideas.length}
-                </Badge>
                 {isCollapsed ? (
                   <ChevronRight className="w-5 h-5 text-text-muted" />
                 ) : (
@@ -344,7 +393,7 @@ export function ProjectsWithIdeasList({ projects, orphanIdeas = [] }: ProjectsWi
 
             {/* Ideas - collapsible */}
             {!isCollapsed && (
-              <div className="mt-2 ml-6 space-y-2 border-l-2 border-border pl-4">
+              <div className="px-4 pb-4 space-y-2 border-t border-border pt-3">
                 {sortedIdeas.map((idea) => renderIdeaCard(idea, project.color))}
 
                 {/* Add idea button */}
@@ -363,15 +412,15 @@ export function ProjectsWithIdeasList({ projects, orphanIdeas = [] }: ProjectsWi
                 />
               </div>
             )}
-          </div>
+          </Card>
         );
       })}
 
       {/* Quick Ideas - at the bottom */}
       {sortedOrphanIdeas.length > 0 && (
-        <div>
+        <Card className="overflow-hidden bg-background-secondary">
           <div
-            className="flex items-center gap-4 p-4 bg-background-secondary rounded-lg border border-border shadow-card cursor-pointer"
+            className="flex items-center gap-4 p-4 cursor-pointer hover:bg-border/30 transition-colors"
             onClick={() => setQuickIdeasCollapsed(!quickIdeasCollapsed)}
           >
             <div className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 bg-border">
@@ -392,11 +441,11 @@ export function ProjectsWithIdeasList({ projects, orphanIdeas = [] }: ProjectsWi
           </div>
 
           {!quickIdeasCollapsed && (
-            <div className="mt-2 ml-6 space-y-2 border-l-2 border-border pl-4">
+            <div className="px-4 pb-4 space-y-2 border-t border-border pt-3">
               {sortedOrphanIdeas.map((idea) => renderIdeaCard(idea, "#94a3b8", projects))}
             </div>
           )}
-        </div>
+        </Card>
       )}
     </div>
   );
