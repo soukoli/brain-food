@@ -53,3 +53,7 @@ android/
 # Database
 *.sql
 !drizzle/*.sql
+
+# Task tracking
+.tasks.md
+.claude/

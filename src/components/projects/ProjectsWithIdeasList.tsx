@@ -22,6 +22,7 @@ import {
   Flame,
   Inbox,
   Lightbulb,
+  LinkIcon,
 } from "lucide-react";
 import { formatTime } from "@/lib/utils";
 import { PRIORITIES } from "@/lib/constants";
@@ -212,86 +213,111 @@ export function ProjectsWithIdeasList({ projects, orphanIdeas = [] }: ProjectsWi
     const isScheduling = schedulingId === idea.id;
     const isRemoving = removingFromFocusId === idea.id;
     const priorityInfo = getPriorityInfo(idea.priority);
+    const hasDescription = !!idea.description;
+    const hasLink = !!idea.linkUrl;
 
     const cardContent = (
       <div
-        className={`flex items-center gap-3 p-3 bg-surface rounded-lg border border-border shadow-card hover:shadow-card-hover transition-all ${
+        className={`p-3 bg-surface rounded-lg border border-border shadow-card hover:shadow-card-hover transition-all ${
           isCompleted ? "opacity-60" : ""
         }`}
       >
-        {/* Icon with color */}
-        <div
-          className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
-          style={{ backgroundColor: borderColor + "20" }}
-        >
-          <Lightbulb className="w-5 h-5" style={{ color: borderColor }} />
-        </div>
+        <div className="flex items-start gap-3">
+          {/* Icon with color */}
+          <div
+            className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 mt-0.5"
+            style={{ backgroundColor: borderColor + "20" }}
+          >
+            <Lightbulb className="w-5 h-5" style={{ color: borderColor }} />
+          </div>
 
-        {/* Title and meta */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span
-              className={`font-semibold text-text-primary truncate ${isCompleted ? "line-through" : ""}`}
-            >
-              {idea.title}
-            </span>
-            {priorityInfo && (
-              <span title={priorityInfo.label}>
-                {idea.priority === "urgent" ? (
-                  <AlertCircle className="w-4 h-4" style={{ color: priorityInfo.color }} />
-                ) : idea.priority === "high" ? (
-                  <ArrowUp className="w-4 h-4" style={{ color: priorityInfo.color }} />
-                ) : null}
+          {/* Title, description, and meta */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span
+                className={`font-semibold text-text-primary truncate ${isCompleted ? "line-through" : ""}`}
+              >
+                {idea.title}
               </span>
+              {priorityInfo && (
+                <span title={priorityInfo.label}>
+                  {idea.priority === "urgent" ? (
+                    <AlertCircle className="w-4 h-4" style={{ color: priorityInfo.color }} />
+                  ) : idea.priority === "high" ? (
+                    <ArrowUp className="w-4 h-4" style={{ color: priorityInfo.color }} />
+                  ) : null}
+                </span>
+              )}
+            </div>
+
+            {/* Description preview */}
+            {hasDescription && (
+              <p className="text-sm text-text-secondary mt-1 line-clamp-2">{idea.description}</p>
+            )}
+
+            {/* Link preview */}
+            {hasLink && (
+              <a
+                href={idea.linkUrl!}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="text-xs text-primary hover:underline mt-1 flex items-center gap-1 truncate"
+              >
+                <LinkIcon className="w-3 h-3 shrink-0" />
+                <span className="truncate">{new URL(idea.linkUrl!).hostname}</span>
+              </a>
+            )}
+
+            {/* Meta info */}
+            <div className="flex items-center gap-2 mt-1.5 text-xs text-text-secondary">
+              {isScheduled && !isCompleted && (
+                <span className="flex items-center gap-1 text-warning">
+                  <Target className="w-3 h-3" />
+                  Focus
+                </span>
+              )}
+              {isCompleted && (
+                <span className="flex items-center gap-1 text-success">
+                  <CheckCircle2 className="w-3 h-3" />
+                  Done
+                </span>
+              )}
+              {idea.timeSpentSeconds > 0 && (
+                <span className="flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  {formatTime(idea.timeSpentSeconds)}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Quick action */}
+          <div className="shrink-0">
+            {isScheduled && !isCompleted ? (
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-9 w-9 text-text-muted hover:text-error hover:bg-error-light"
+                onClick={(e) => handleRemoveFromFocus(idea, e)}
+                disabled={isRemoving}
+              >
+                <X className={`w-4 h-4 ${isRemoving ? "animate-pulse" : ""}`} />
+              </Button>
+            ) : !isScheduled ? (
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-9 w-9 text-warning hover:text-warning hover:bg-warning-light"
+                onClick={(e) => handleScheduleForFocus(idea, e)}
+                disabled={isScheduling}
+              >
+                <Target className={`w-4 h-4 ${isScheduling ? "animate-pulse" : ""}`} />
+              </Button>
+            ) : (
+              <ChevronRight className="w-5 h-5 text-text-muted" />
             )}
           </div>
-          <div className="flex items-center gap-2 mt-0.5 text-xs text-text-secondary">
-            {isScheduled && !isCompleted && (
-              <span className="flex items-center gap-1 text-warning">
-                <Target className="w-3 h-3" />
-                Focus
-              </span>
-            )}
-            {isCompleted && (
-              <span className="flex items-center gap-1 text-success">
-                <CheckCircle2 className="w-3 h-3" />
-                Done
-              </span>
-            )}
-            {idea.timeSpentSeconds > 0 && (
-              <span className="flex items-center gap-1">
-                <Clock className="w-3 h-3" />
-                {formatTime(idea.timeSpentSeconds)}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Quick action */}
-        <div className="shrink-0">
-          {isScheduled && !isCompleted ? (
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-9 w-9 text-text-muted hover:text-error hover:bg-error-light"
-              onClick={(e) => handleRemoveFromFocus(idea, e)}
-              disabled={isRemoving}
-            >
-              <X className={`w-4 h-4 ${isRemoving ? "animate-pulse" : ""}`} />
-            </Button>
-          ) : !isScheduled ? (
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-9 w-9 text-warning hover:text-warning hover:bg-warning-light"
-              onClick={(e) => handleScheduleForFocus(idea, e)}
-              disabled={isScheduling}
-            >
-              <Target className={`w-4 h-4 ${isScheduling ? "animate-pulse" : ""}`} />
-            </Button>
-          ) : (
-            <ChevronRight className="w-5 h-5 text-text-muted" />
-          )}
         </div>
       </div>
     );

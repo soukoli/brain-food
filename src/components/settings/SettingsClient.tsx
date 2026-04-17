@@ -24,10 +24,6 @@ import {
   CheckCircle2,
   AlertCircle,
   Clock,
-  ChevronRight,
-  Shield,
-  Bell,
-  HelpCircle,
   Sun,
   Moon,
   Monitor,
@@ -204,30 +200,6 @@ export function SettingsClient({ user }: SettingsClientProps) {
           </Card>
         </div>
 
-        {/* Account Settings Section */}
-        <div>
-          <h3 className="text-sm font-semibold text-text-secondary uppercase tracking-wide px-1 mb-3">
-            Account Settings
-          </h3>
-          <Card className="divide-y divide-border">
-            <SettingsRow
-              icon={<User className="w-5 h-5 text-primary" />}
-              label="Personal Information"
-              onClick={() => {}}
-            />
-            <SettingsRow
-              icon={<Shield className="w-5 h-5 text-success" />}
-              label="Privacy & Security"
-              onClick={() => {}}
-            />
-            <SettingsRow
-              icon={<Bell className="w-5 h-5 text-warning" />}
-              label="Notifications"
-              onClick={() => {}}
-            />
-          </Card>
-        </div>
-
         {/* Backup Section */}
         <div>
           <h3 className="text-sm font-semibold text-text-secondary uppercase tracking-wide px-1 mb-3">
@@ -293,20 +265,6 @@ export function SettingsClient({ user }: SettingsClientProps) {
           </Card>
         </div>
 
-        {/* Support Section */}
-        <div>
-          <h3 className="text-sm font-semibold text-text-secondary uppercase tracking-wide px-1 mb-3">
-            Support
-          </h3>
-          <Card className="divide-y divide-border">
-            <SettingsRow
-              icon={<HelpCircle className="w-5 h-5 text-text-muted" />}
-              label="Help Center"
-              onClick={() => {}}
-            />
-          </Card>
-        </div>
-
         {/* Sign Out */}
         <Button
           variant="outline"
@@ -354,33 +312,6 @@ export function SettingsClient({ user }: SettingsClientProps) {
         </DialogContent>
       </Dialog>
     </>
-  );
-}
-
-// Settings row component matching Style A design
-function SettingsRow({
-  icon,
-  label,
-  onClick,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  onClick: () => void;
-  value?: string;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="w-full flex items-center gap-4 p-4 hover:bg-background-secondary transition-colors duration-150 touch-manipulation"
-    >
-      <div className="w-10 h-10 rounded-full bg-background-secondary flex items-center justify-center shrink-0">
-        {icon}
-      </div>
-      <span className="flex-1 text-left font-medium text-text-primary">{label}</span>
-      {value && <span className="text-sm text-text-secondary">{value}</span>}
-      <ChevronRight className="w-5 h-5 text-text-muted shrink-0" />
-    </button>
   );
 }
 
