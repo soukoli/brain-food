@@ -61,8 +61,8 @@ export async function POST(request: Request) {
     const user = await getRequiredUser();
     const db = await getDbAsync();
 
-    // Ensure user exists in database before creating idea
-    await ensureUserInDb(user);
+    // Ensure user exists in database and get their stable DB user ID
+    const dbUserId = await ensureUserInDb(user);
 
     const body = await request.json();
     const validatedData = createIdeaSchema.parse(body);
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
       .insert(ideas)
       .values({
         ...restData,
-        userId: user.id,
+        userId: dbUserId,
         scheduledForToday: scheduledForToday ? new Date(scheduledForToday) : null,
       })
       .returning();

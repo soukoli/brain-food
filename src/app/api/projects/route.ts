@@ -46,8 +46,8 @@ export async function POST(request: Request) {
     const user = await getRequiredUser();
     const db = await getDbAsync();
 
-    // Ensure user exists in database before creating project
-    await ensureUserInDb(user);
+    // Ensure user exists in database and get their stable DB user ID
+    const dbUserId = await ensureUserInDb(user);
 
     const body = await request.json();
     const validatedData = createProjectSchema.parse(body);
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
       .insert(projects)
       .values({
         ...validatedData,
-        userId: user.id,
+        userId: dbUserId,
       })
       .returning();
 

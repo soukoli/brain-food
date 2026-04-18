@@ -1,9 +1,65 @@
 import NextAuth from "next-auth";
 import authConfig from "./auth.config";
+import { getDbAsync } from "@/lib/db";
+import { users } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
+
+/**
+ * Get or create user in database by email.
+ * Returns the stable database user ID.
+ */
+async function getOrCreateUser(profile: {
+  id?: string;
+  sub?: string;
+  name?: string;
+  email?: string;
+  image?: string;
+  picture?: string;
+}): Promise<string | null> {
+  const email = profile.email;
+  if (!email) return null;
+
+  try {
+    const db = await getDbAsync();
+
+    // Find existing user by email
+    const existingUser = await db.query.users.findFirst({
+      where: eq(users.email, email),
+    });
+
+    if (existingUser) {
+      // Update profile info if changed
+      const newName = profile.name || existingUser.name;
+      const newImage = profile.picture || profile.image || existingUser.image;
+
+      if (existingUser.name !== newName || existingUser.image !== newImage) {
+        await db
+          .update(users)
+          .set({ name: newName, image: newImage })
+          .where(eq(users.id, existingUser.id));
+      }
+      return existingUser.id;
+    }
+
+    // Create new user
+    const newId = profile.sub || profile.id || crypto.randomUUID();
+    await db.insert(users).values({
+      id: newId,
+      name: profile.name || null,
+      email: email,
+      image: profile.picture || profile.image || null,
+    });
+
+    return newId;
+  } catch (error) {
+    console.error("Error in getOrCreateUser:", error);
+    return null;
+  }
+}
 
 // Note: No database adapter - using pure JWT strategy for Edge compatibility
 // User data is stored in the JWT token, not in database sessions
-// User creation in DB is handled by ensureUserInDb() in auth-utils.ts
+// User creation in DB is handled during JWT callback
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
   session: {
@@ -11,12 +67,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   callbacks: {
     async jwt({ token, user, profile, account }) {
-      // On sign-in, persist user info and tokens into the JWT
-      if (user) {
-        token.id = user.id;
-        token.name = user.name;
-        token.email = user.email;
-        token.image = user.image;
+      // On initial sign-in, get/create user in DB and use DB user ID
+      if (account && profile) {
+        const dbUserId = await getOrCreateUser({
+          id: user?.id,
+          sub: profile.sub ?? undefined,
+          name: (profile.name ?? user?.name) || undefined,
+          email: (profile.email ?? user?.email) || undefined,
+          image: user?.image || undefined,
+          picture: (profile as { picture?: string })?.picture,
+        });
+
+        if (dbUserId) {
+          token.id = dbUserId; // Use stable DB user ID
+          token.name = profile.name ?? user?.name;
+          token.email = profile.email ?? user?.email;
+          token.image = (profile as { picture?: string })?.picture ?? user?.image;
+        }
       }
 
       // Capture Google OAuth tokens for Google Drive access
@@ -24,14 +91,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.accessToken = account.access_token;
         token.refreshToken = account.refresh_token;
         token.accessTokenExpires = account.expires_at ? account.expires_at * 1000 : 0;
-      }
-
-      // Also capture from Google profile if available
-      if (profile?.sub && !token.id) {
-        token.id = profile.sub;
-        token.name = profile.name;
-        token.email = profile.email;
-        token.image = (profile as { picture?: string })?.picture;
       }
 
       return token;
