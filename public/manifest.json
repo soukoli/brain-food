@@ -1,7 +1,7 @@
 {
   "name": "BrainFood",
   "short_name": "BrainFood",
-  "description": "Organize your ideas into projects and track your daily progress",
+  "description": "Organize your tasks into projects and track your daily progress",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0f172a",
