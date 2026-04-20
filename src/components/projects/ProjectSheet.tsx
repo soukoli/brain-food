@@ -107,7 +107,7 @@ export function ProjectSheet({
         <DrawerHeader>
           <DrawerTitle>{isEdit ? "Edit Project" : "New Project"}</DrawerTitle>
           <DrawerDescription>
-            {isEdit ? "Update your project details" : "Create a new project to organize your ideas"}
+            {isEdit ? "Update your project details" : "Create a new project to organize your tasks"}
           </DrawerDescription>
         </DrawerHeader>
 

@@ -27,7 +27,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
             <p className="text-sm text-text-secondary truncate mt-0.5">{project.description}</p>
           ) : (
             <p className="text-sm font-medium mt-0.5" style={{ color: project.color }}>
-              {project.ideaCount} {project.ideaCount === 1 ? "idea" : "ideas"}
+              {project.ideaCount} {project.ideaCount === 1 ? "task" : "tasks"}
             </p>
           )}
         </div>

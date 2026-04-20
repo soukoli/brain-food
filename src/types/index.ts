@@ -27,8 +27,19 @@ export interface ProjectWithIdeas extends Project {
 export interface DashboardStats {
   projectCount: number;
   todayCount: number;
-  totalIdeas: number;
+  totalTasks: number;
   inProgressCount: number;
+}
+
+/**
+ * Recent project for dashboard carousel
+ */
+export interface RecentProject {
+  id: string;
+  name: string;
+  color: string;
+  totalTimeSpent: number; // Total time spent on all tasks in project
+  lastActivityAt: Date; // When was the project last modified
 }
 
 /**

@@ -86,7 +86,7 @@ export function FocusClient({ activeTasks, completedToday }: FocusClientProps) {
             </div>
             <h3 className="text-lg font-semibold text-text-primary mb-2">No tasks in Focus</h3>
             <p className="text-text-secondary mb-6">
-              Add ideas to Focus to start tracking your progress
+              Add tasks to Focus to start tracking your progress
             </p>
             <div className="flex gap-3 justify-center">
               <Link href="/capture">
@@ -97,7 +97,7 @@ export function FocusClient({ activeTasks, completedToday }: FocusClientProps) {
               </Link>
               <Link href="/projects">
                 <Button variant="warning">
-                  Browse Ideas
+                  Browse Tasks
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </Link>

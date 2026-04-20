@@ -317,18 +317,18 @@ export function ProjectDetailClient({ project, ideas }: ProjectDetailClientProps
         </div>
       </Block>
 
-      {/* Ideas list */}
+      {/* Tasks list */}
       {ideas.length === 0 ? (
         <Block>
           <Card className="p-6 text-center">
             <Lightbulb className="h-10 w-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-            <p className="text-slate-500 dark:text-slate-400 mb-3 text-sm">No ideas yet</p>
+            <p className="text-slate-500 dark:text-slate-400 mb-3 text-sm">No tasks yet</p>
             <IdeaSheet
               projectId={project.id}
               trigger={
                 <Button size="sm" style={{ backgroundColor: project.color }}>
                   <Plus className="h-4 w-4 mr-1" />
-                  Add Idea
+                  Add Task
                 </Button>
               }
             />
@@ -338,7 +338,7 @@ export function ProjectDetailClient({ project, ideas }: ProjectDetailClientProps
         <Block className="space-y-1.5">
           {sortedIdeas.map((idea) => renderIdeaCard(idea))}
 
-          {/* Add idea button at bottom */}
+          {/* Add task button at bottom */}
           <IdeaSheet
             projectId={project.id}
             trigger={
@@ -348,7 +348,7 @@ export function ProjectDetailClient({ project, ideas }: ProjectDetailClientProps
                 className="w-full h-8 border border-dashed border-slate-200 dark:border-slate-700 text-slate-400 text-xs"
               >
                 <Plus className="w-3 h-3 mr-1" />
-                Add idea
+                Add task
               </Button>
             }
           />

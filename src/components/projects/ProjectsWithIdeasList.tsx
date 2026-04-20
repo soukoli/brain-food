@@ -375,7 +375,7 @@ export function ProjectsWithIdeasList({ projects, orphanIdeas = [] }: ProjectsWi
           </div>
           <h3 className="text-lg font-semibold text-text-primary mb-2">No projects yet</h3>
           <p className="text-text-secondary mb-6">
-            Create your first project to start organizing your ideas
+            Create your first project to start organizing your tasks
           </p>
           <ProjectSheet
             trigger={
@@ -430,7 +430,7 @@ export function ProjectsWithIdeasList({ projects, orphanIdeas = [] }: ProjectsWi
                   {hasUrgent && <Flame className="w-4 h-4 text-error shrink-0" />}
                 </div>
                 <p className="text-sm text-text-secondary mt-0.5">
-                  {project.ideas.length} {project.ideas.length === 1 ? "idea" : "ideas"}
+                  {project.ideas.length} {project.ideas.length === 1 ? "task" : "tasks"}
                   {progress > 0 && ` • ${progress}% done`}
                 </p>
               </div>
@@ -481,7 +481,7 @@ export function ProjectsWithIdeasList({ projects, orphanIdeas = [] }: ProjectsWi
               <div className="px-4 pb-4 space-y-2 border-t border-border pt-3">
                 {sortedIdeas.map((idea) => renderIdeaCard(idea, project.color))}
 
-                {/* Add idea button */}
+                {/* Add task button */}
                 <IdeaSheet
                   projectId={project.id}
                   trigger={
@@ -491,7 +491,7 @@ export function ProjectsWithIdeasList({ projects, orphanIdeas = [] }: ProjectsWi
                       className="w-full h-10 border border-dashed border-border text-text-muted"
                     >
                       <Plus className="w-4 h-4 mr-2" />
-                      {sortedIdeas.length === 0 ? "Add first idea" : "Add idea"}
+                      {sortedIdeas.length === 0 ? "Add first task" : "Add task"}
                     </Button>
                   }
                 />
@@ -501,7 +501,7 @@ export function ProjectsWithIdeasList({ projects, orphanIdeas = [] }: ProjectsWi
         );
       })}
 
-      {/* Quick Ideas - at the bottom */}
+      {/* Quick Tasks - at the bottom */}
       {sortedOrphanIdeas.length > 0 && (
         <Card className="overflow-hidden bg-background-secondary">
           <div
@@ -512,7 +512,7 @@ export function ProjectsWithIdeasList({ projects, orphanIdeas = [] }: ProjectsWi
               <Inbox className="w-6 h-6 text-text-secondary" />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-text-secondary">Quick Ideas</h3>
+              <h3 className="font-semibold text-text-secondary">Quick Tasks</h3>
               <p className="text-sm text-text-muted">Tap to assign to project</p>
             </div>
             <Badge variant="secondary" className="text-xs px-2">

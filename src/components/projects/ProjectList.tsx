@@ -21,7 +21,7 @@ export function ProjectList({ projects }: ProjectListProps) {
           </div>
           <h3 className="text-lg font-semibold text-text-primary mb-2">No projects yet</h3>
           <p className="text-text-secondary mb-6">
-            Create your first project to start organizing your ideas
+            Create your first project to start organizing your tasks
           </p>
           <ProjectSheet
             trigger={

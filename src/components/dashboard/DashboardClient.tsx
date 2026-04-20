@@ -2,18 +2,31 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Zap, Target, Quote, RefreshCw, X, Lightbulb, Sparkles, ChevronRight } from "lucide-react";
+import {
+  Bell,
+  Quote,
+  RefreshCw,
+  X,
+  CheckSquare,
+  Play,
+  ChevronRight,
+  FolderOpen,
+} from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
-import type { IdeaWithProject, DashboardStats } from "@/types";
+import { formatDistanceToNow } from "date-fns";
+import type { IdeaWithProject, DashboardStats, RecentProject } from "@/types";
 
 interface DashboardClientProps {
   userName: string;
+  userImage?: string | null;
   stats: DashboardStats;
-  recentIdeas: IdeaWithProject[];
+  recentProjects: RecentProject[];
+  todaysTasks: IdeaWithProject[];
 }
 
 interface QuoteData {
@@ -21,7 +34,24 @@ interface QuoteData {
   author: string;
 }
 
-export function DashboardClient({ userName, stats, recentIdeas }: DashboardClientProps) {
+// Format time as "Xh Ym" or "Xm" or "0m"
+function formatTimeShort(seconds: number): string {
+  if (seconds < 60) return "0m";
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`;
+  }
+  return `${minutes}m`;
+}
+
+export function DashboardClient({
+  userName,
+  userImage,
+  stats,
+  recentProjects,
+  todaysTasks,
+}: DashboardClientProps) {
   const router = useRouter();
   const [quote, setQuote] = useState<QuoteData | null>(null);
   const [isLoadingQuote, setIsLoadingQuote] = useState(true);
@@ -71,48 +101,58 @@ export function DashboardClient({ userName, stats, recentIdeas }: DashboardClien
     fetchQuote();
   };
 
-  const handleScheduleForFocus = async (idea: IdeaWithProject, e: React.MouseEvent) => {
+  const handleStartFocus = (task: IdeaWithProject, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-
-    if (idea.scheduledForToday) {
-      toast.info("Already in Focus");
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/ideas/${idea.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          scheduledForToday: new Date().toISOString(),
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to add to Focus");
-      }
-
-      toast.success("Added to Focus!");
-      router.refresh();
-    } catch {
-      toast.error("Failed to add to Focus");
-    }
+    // Navigate to focus page - the task should already be scheduled for today
+    router.push("/focus");
   };
 
   return (
     <div className="px-4 pt-6 pb-4 space-y-5">
-      {/* Header with greeting */}
+      {/* Header with avatar and notification bell */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-normal text-text-primary">
-          Hello <span className="font-bold">{userName},</span>
-        </h1>
-        <Button variant="ghost" size="icon" className="w-10 h-10 rounded-xl border border-border">
-          <Sparkles className="w-5 h-5 text-primary" />
-        </Button>
+        <div className="flex items-center gap-3">
+          {/* User Avatar */}
+          <div className="w-12 h-12 rounded-full overflow-hidden bg-primary-light flex items-center justify-center">
+            {userImage ? (
+              <Image
+                src={userImage}
+                alt={userName}
+                width={48}
+                height={48}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span className="text-lg font-bold text-primary">
+                {userName.charAt(0).toUpperCase()}
+              </span>
+            )}
+          </div>
+          <div>
+            <h1 className="text-xl font-semibold text-text-primary">Hello, {userName}</h1>
+            <p className="text-sm text-text-secondary">Welcome back</p>
+          </div>
+        </div>
+
+        {/* Focus Bell - link to Focus page */}
+        <Link href="/focus">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="w-11 h-11 rounded-xl border border-border relative"
+          >
+            <Bell className="w-5 h-5 text-text-primary" />
+            {stats.todayCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-warning text-white text-xs font-bold rounded-full flex items-center justify-center">
+                {stats.todayCount}
+              </span>
+            )}
+          </Button>
+        </Link>
       </div>
 
-      {/* Quote Card - styled like "Total Balance" card */}
+      {/* Quote Card - compact */}
       <AnimatePresence>
         {isQuoteVisible && (
           <motion.div
@@ -121,12 +161,27 @@ export function DashboardClient({ userName, stats, recentIdeas }: DashboardClien
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.2 }}
           >
-            <Card className="p-5 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border-none shadow-sm">
-              <div className="flex items-start justify-between mb-3">
-                <span className="text-xs font-medium text-text-secondary uppercase tracking-wider">
-                  Daily Inspiration
-                </span>
-                <div className="flex items-center gap-1">
+            <Card className="p-4 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border-none shadow-sm">
+              <div className="flex items-start gap-3">
+                <Quote className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  {isLoadingQuote ? (
+                    <div className="space-y-2 animate-pulse">
+                      <div className="h-4 bg-border rounded w-3/4"></div>
+                      <div className="h-3 bg-border rounded w-1/3"></div>
+                    </div>
+                  ) : quote ? (
+                    <>
+                      <p className="text-sm font-medium text-text-primary leading-relaxed line-clamp-2">
+                        &ldquo;{quote.quote}&rdquo;
+                      </p>
+                      <p className="mt-1 text-xs text-text-secondary">— {quote.author}</p>
+                    </>
+                  ) : (
+                    <p className="text-sm text-text-secondary">Start your day with purpose</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-0.5 shrink-0">
                   <Button
                     size="icon"
                     variant="ghost"
@@ -146,21 +201,6 @@ export function DashboardClient({ userName, stats, recentIdeas }: DashboardClien
                   </Button>
                 </div>
               </div>
-              {isLoadingQuote ? (
-                <div className="space-y-2 animate-pulse">
-                  <div className="h-5 bg-border rounded w-3/4"></div>
-                  <div className="h-5 bg-border rounded w-1/2"></div>
-                </div>
-              ) : quote ? (
-                <>
-                  <p className="text-lg font-medium text-text-primary leading-relaxed">
-                    &ldquo;{quote.quote}&rdquo;
-                  </p>
-                  <p className="mt-2 text-sm text-text-secondary">— {quote.author}</p>
-                </>
-              ) : (
-                <p className="text-lg text-text-secondary">Start your day with purpose</p>
-              )}
             </Card>
           </motion.div>
         )}
@@ -171,7 +211,7 @@ export function DashboardClient({ userName, stats, recentIdeas }: DashboardClien
         <Button
           variant="ghost"
           size="sm"
-          className="w-full text-text-muted hover:text-primary"
+          className="w-full text-text-muted hover:text-primary h-8"
           onClick={handleShowQuote}
         >
           <Quote className="w-4 h-4 mr-2" />
@@ -179,16 +219,16 @@ export function DashboardClient({ userName, stats, recentIdeas }: DashboardClien
         </Button>
       )}
 
-      {/* Stats Card - Projects, Ideas, Focus */}
-      <Card className="p-5">
+      {/* Stats Card - Projects, Tasks, Focus */}
+      <Card className="p-4">
         <div className="grid grid-cols-3 divide-x divide-border">
           <Link href="/projects" className="pr-3 text-center">
             <p className="text-xs text-text-secondary mb-1">Projects</p>
             <p className="text-2xl font-bold text-text-primary">{stats.projectCount}</p>
           </Link>
           <Link href="/projects" className="px-3 text-center">
-            <p className="text-xs text-text-secondary mb-1">Ideas</p>
-            <p className="text-2xl font-bold text-text-primary">{stats.totalIdeas}</p>
+            <p className="text-xs text-text-secondary mb-1">Tasks</p>
+            <p className="text-2xl font-bold text-text-primary">{stats.totalTasks}</p>
           </Link>
           <Link href="/focus" className="pl-3 text-center">
             <p className="text-xs text-text-secondary mb-1">Focus</p>
@@ -200,85 +240,141 @@ export function DashboardClient({ userName, stats, recentIdeas }: DashboardClien
         </div>
       </Card>
 
-      {/* Recent Ideas Section */}
+      {/* Recent Projects Carousel */}
+      {recentProjects.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-semibold text-text-primary">Recent Projects</h2>
+            <Link
+              href="/projects"
+              className="text-sm text-text-secondary font-medium flex items-center gap-0.5"
+            >
+              All
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          {/* Horizontal scroll container */}
+          <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
+            {recentProjects.map((project) => {
+              const firstLetter = project.name.charAt(0).toUpperCase();
+              const timeAgo = formatDistanceToNow(new Date(project.lastActivityAt), {
+                addSuffix: false,
+              });
+
+              return (
+                <Link key={project.id} href={`/projects/${project.id}`} className="shrink-0">
+                  <Card className="w-36 p-4 hover:shadow-md transition-shadow">
+                    {/* Project icon and time */}
+                    <div className="flex items-start justify-between mb-3">
+                      <div
+                        className="w-10 h-10 rounded-full flex items-center justify-center"
+                        style={{ backgroundColor: project.color + "20" }}
+                      >
+                        <span className="text-base font-bold" style={{ color: project.color }}>
+                          {firstLetter}
+                        </span>
+                      </div>
+                      {/* Activity indicator dot */}
+                      <div
+                        className="w-2.5 h-2.5 rounded-full"
+                        style={{ backgroundColor: project.color }}
+                      />
+                    </div>
+
+                    {/* Time spent */}
+                    <p className="text-sm font-semibold text-text-primary mb-0.5">
+                      {formatTimeShort(project.totalTimeSpent)}
+                    </p>
+
+                    {/* Project name */}
+                    <p className="text-xs text-text-secondary truncate">{project.name}</p>
+
+                    {/* Last activity */}
+                    <p className="text-xs text-text-muted mt-1">{timeAgo} ago</p>
+                  </Card>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Today's Tasks Section */}
       <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-text-primary">Recent Ideas</h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-base font-semibold text-text-primary">Today&apos;s Tasks</h2>
           <Link
-            href="/projects"
-            className="text-sm text-text-primary font-medium flex items-center gap-1"
+            href="/focus"
+            className="text-sm text-text-secondary font-medium flex items-center gap-0.5"
           >
-            See All
+            Focus
             <ChevronRight className="w-4 h-4" />
           </Link>
         </div>
 
-        {recentIdeas.length === 0 ? (
-          <Card className="p-8 text-center">
+        {todaysTasks.length === 0 ? (
+          <Card className="p-6 text-center">
             <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-primary-light flex items-center justify-center">
-              <Lightbulb className="h-6 w-6 text-primary" />
+              <CheckSquare className="h-6 w-6 text-primary" />
             </div>
-            <p className="text-text-secondary mb-4">No ideas yet. Capture your first thought!</p>
-            <Link href="/capture">
-              <Button size="sm">
-                <Zap className="h-4 w-4 mr-2" />
-                Capture Idea
-              </Button>
-            </Link>
+            <p className="text-sm text-text-secondary mb-1">No tasks for today</p>
+            <p className="text-xs text-text-muted">Add tasks to Focus from your projects</p>
           </Card>
         ) : (
-          <div className="space-y-3">
-            {recentIdeas.slice(0, 4).map((idea) => {
-              const isScheduled = !!idea.scheduledForToday;
-              const isCompleted = idea.status === "completed";
-              const projectColor = idea.project?.color ?? "#94a3b8";
+          <div className="space-y-2">
+            {todaysTasks.slice(0, 5).map((task) => {
+              const isCompleted = task.status === "completed";
+              const projectColor = task.project?.color ?? "#94a3b8";
+              const hasTimeSpent = task.timeSpentSeconds > 0;
 
               return (
-                <Card key={idea.id} className="p-4">
-                  <div className="flex items-center gap-4">
-                    {/* Icon with circular progress indicator */}
-                    <div className="relative">
+                <Card key={task.id} className={`p-3 ${isCompleted ? "opacity-60" : ""}`}>
+                  <div className="flex items-center gap-3">
+                    {/* Project color indicator */}
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: projectColor + "20" }}
+                    >
                       <div
-                        className="w-12 h-12 rounded-full flex items-center justify-center"
-                        style={{ backgroundColor: projectColor + "15" }}
-                      >
-                        <Lightbulb className="w-5 h-5" style={{ color: projectColor }} />
-                      </div>
-                      {/* Progress ring - shows if scheduled */}
-                      {isScheduled && (
-                        <svg className="absolute inset-0 w-12 h-12 -rotate-90">
-                          <circle
-                            cx="24"
-                            cy="24"
-                            r="22"
-                            fill="none"
-                            stroke={isCompleted ? "#22c55e" : projectColor}
-                            strokeWidth="3"
-                            strokeDasharray={isCompleted ? "138" : "69"}
-                            strokeDashoffset="0"
-                            strokeLinecap="round"
-                          />
-                        </svg>
-                      )}
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: projectColor }}
+                      />
                     </div>
 
                     {/* Content */}
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-text-primary truncate">{idea.title}</p>
-                      {idea.project && (
-                        <p className="text-sm text-text-secondary mt-0.5">{idea.project.name}</p>
-                      )}
+                      <p
+                        className={`font-medium text-text-primary text-sm truncate ${isCompleted ? "line-through" : ""}`}
+                      >
+                        {task.title}
+                      </p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        {task.project && (
+                          <span className="text-xs text-text-secondary truncate">
+                            {task.project.name}
+                          </span>
+                        )}
+                        {hasTimeSpent && (
+                          <>
+                            <span className="text-text-muted">•</span>
+                            <span className="text-xs text-text-muted">
+                              {formatTimeShort(task.timeSpentSeconds)}
+                            </span>
+                          </>
+                        )}
+                      </div>
                     </div>
 
-                    {/* Quick Focus button */}
-                    {!isScheduled && !isCompleted && (
+                    {/* Play button - start focus */}
+                    {!isCompleted && (
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="shrink-0 h-9 w-9 text-warning hover:text-warning hover:bg-warning-light"
-                        onClick={(e) => handleScheduleForFocus(idea, e)}
+                        className="shrink-0 h-9 w-9 rounded-xl bg-primary-light text-primary hover:bg-primary hover:text-white"
+                        onClick={(e) => handleStartFocus(task, e)}
                       >
-                        <Target className="w-5 h-5" />
+                        <Play className="w-4 h-4 ml-0.5" />
                       </Button>
                     )}
                   </div>
@@ -288,6 +384,25 @@ export function DashboardClient({ userName, stats, recentIdeas }: DashboardClien
           </div>
         )}
       </div>
+
+      {/* Empty state when no projects */}
+      {recentProjects.length === 0 && todaysTasks.length === 0 && (
+        <Card className="p-8 text-center">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary-light flex items-center justify-center">
+            <FolderOpen className="h-8 w-8 text-primary" />
+          </div>
+          <h3 className="text-lg font-semibold text-text-primary mb-2">Get Started</h3>
+          <p className="text-text-secondary mb-4">
+            Create your first project and add tasks to stay organized
+          </p>
+          <Link href="/projects">
+            <Button>
+              <FolderOpen className="h-4 w-4 mr-2" />
+              Go to Projects
+            </Button>
+          </Link>
+        </Card>
+      )}
     </div>
   );
 }
