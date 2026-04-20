@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ProjectSheet } from "./ProjectSheet";
-import { IdeaSheet } from "@/components/ideas/IdeaSheet";
+import { TaskSheet } from "@/components/tasks/TaskSheet";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -359,7 +359,7 @@ export function ProjectsWithIdeasList({ projects, orphanIdeas = [] }: ProjectsWi
         onDelete={() => handleDeleteIdea(idea.id)}
         ideaTitle={idea.title}
       >
-        <IdeaSheet idea={idea} projects={allProjects} trigger={cardContent} />
+        <TaskSheet idea={idea} projects={allProjects} trigger={cardContent} />
       </SwipeableCard>
     );
   };
@@ -482,7 +482,7 @@ export function ProjectsWithIdeasList({ projects, orphanIdeas = [] }: ProjectsWi
                 {sortedIdeas.map((idea) => renderIdeaCard(idea, project.color))}
 
                 {/* Add task button */}
-                <IdeaSheet
+                <TaskSheet
                   projectId={project.id}
                   trigger={
                     <Button

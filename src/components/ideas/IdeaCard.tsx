@@ -6,7 +6,7 @@ import { motion, useMotionValue, useTransform, PanInfo } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { IdeaSheet } from "./IdeaSheet";
+import { TaskSheet } from "@/components/tasks/TaskSheet";
 import {
   Dialog,
   DialogContent,
@@ -151,7 +151,7 @@ export function IdeaCard({
           style={{ x }}
           whileDrag={{ cursor: "grabbing" }}
         >
-          <IdeaSheet
+          <TaskSheet
             idea={idea}
             trigger={
               <Card className="p-4 cursor-pointer">

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ProjectSheet } from "./ProjectSheet";
-import { IdeaSheet } from "@/components/ideas/IdeaSheet";
+import { TaskSheet } from "@/components/tasks/TaskSheet";
 import { SwipeableCard } from "@/components/ui/swipeable-card";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -225,7 +225,7 @@ export function ProjectDetailClient({ project, ideas }: ProjectDetailClientProps
         onDelete={() => handleDeleteIdea(idea.id)}
         ideaTitle={idea.title}
       >
-        <IdeaSheet idea={idea} trigger={cardContent} />
+        <TaskSheet idea={idea} trigger={cardContent} />
       </SwipeableCard>
     );
   };
@@ -238,7 +238,7 @@ export function ProjectDetailClient({ project, ideas }: ProjectDetailClientProps
         backHref="/projects"
         right={
           <div className="flex items-center gap-1">
-            <IdeaSheet
+            <TaskSheet
               projectId={project.id}
               trigger={
                 <Button size="icon" variant="ghost">
@@ -323,7 +323,7 @@ export function ProjectDetailClient({ project, ideas }: ProjectDetailClientProps
           <Card className="p-6 text-center">
             <Lightbulb className="h-10 w-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
             <p className="text-slate-500 dark:text-slate-400 mb-3 text-sm">No tasks yet</p>
-            <IdeaSheet
+            <TaskSheet
               projectId={project.id}
               trigger={
                 <Button size="sm" style={{ backgroundColor: project.color }}>
@@ -339,7 +339,7 @@ export function ProjectDetailClient({ project, ideas }: ProjectDetailClientProps
           {sortedIdeas.map((idea) => renderIdeaCard(idea))}
 
           {/* Add task button at bottom */}
-          <IdeaSheet
+          <TaskSheet
             projectId={project.id}
             trigger={
               <Button

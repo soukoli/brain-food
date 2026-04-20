@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ProjectSheet } from "./ProjectSheet";
-import { IdeaSheet } from "@/components/ideas/IdeaSheet";
+import { TaskSheet } from "@/components/tasks/TaskSheet";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { SwipeableCard } from "@/components/ui/swipeable-card";
@@ -270,7 +270,7 @@ export function ProjectsPageClient({ projects, orphanIdeas }: ProjectsPageClient
         onDelete={() => handleDeleteIdea(task.id)}
         ideaTitle={task.title}
       >
-        <IdeaSheet idea={task} projects={sortedProjects} trigger={cardContent} />
+        <TaskSheet idea={task} projects={sortedProjects} trigger={cardContent} />
       </SwipeableCard>
     );
   };
@@ -421,7 +421,7 @@ export function ProjectsPageClient({ projects, orphanIdeas }: ProjectsPageClient
         {/* Add Task Button */}
         {selectedIndex !== -2 && (
           <div className="mt-4">
-            <IdeaSheet
+            <TaskSheet
               projectId={currentProject?.id}
               projects={sortedProjects}
               trigger={

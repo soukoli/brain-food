@@ -113,7 +113,7 @@ export function ProjectSheet({
 
         <div className="px-4 space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Name</label>
+            <label className="text-sm font-medium text-text-secondary">Name</label>
             <Input
               placeholder="Project name"
               value={name}
@@ -123,7 +123,7 @@ export function ProjectSheet({
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+            <label className="text-sm font-medium text-text-secondary">
               Description (optional)
             </label>
             <Textarea
@@ -135,7 +135,7 @@ export function ProjectSheet({
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Color</label>
+            <label className="text-sm font-medium text-text-secondary">Color</label>
             <ColorPicker value={color} onChange={setColor} />
           </div>
         </div>
