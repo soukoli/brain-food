@@ -1,9 +1,9 @@
 import { getDbAsync } from "@/lib/db";
 import { projects, ideas } from "@/lib/db/schema";
-import { eq, desc, isNull, and, asc } from "drizzle-orm";
+import { eq, desc, isNull, and } from "drizzle-orm";
 import { getRequiredUser } from "@/lib/auth-utils";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { ProjectsWithIdeasList } from "@/components/projects/ProjectsWithIdeasList";
+import { ProjectsPageClient } from "@/components/projects/ProjectsPageClient";
 import { ProjectSheet } from "@/components/projects/ProjectSheet";
 import { Plus } from "lucide-react";
 
@@ -13,7 +13,7 @@ export default async function ProjectsPage() {
   const user = await getRequiredUser();
   const db = await getDbAsync();
 
-  // Get projects with their ideas (using relational query), sorted by sortOrder
+  // Get projects with their ideas
   const projectsWithIdeas = await db.query.projects.findMany({
     where: eq(projects.userId, user.id),
     with: {
@@ -21,10 +21,9 @@ export default async function ProjectsPage() {
         orderBy: (ideas, { desc }) => [desc(ideas.createdAt)],
       },
     },
-    orderBy: [asc(projects.sortOrder), desc(projects.createdAt)],
   });
 
-  // Get orphan ideas (ideas without a project)
+  // Get orphan ideas (tasks without a project)
   const orphanIdeas = await db.query.ideas.findMany({
     where: and(eq(ideas.userId, user.id), isNull(ideas.projectId)),
     orderBy: [desc(ideas.createdAt)],
@@ -33,7 +32,7 @@ export default async function ProjectsPage() {
   return (
     <>
       <PageHeader
-        title="My Projects"
+        title="Projects"
         right={
           <ProjectSheet
             trigger={
@@ -44,7 +43,7 @@ export default async function ProjectsPage() {
           />
         }
       />
-      <ProjectsWithIdeasList projects={projectsWithIdeas} orphanIdeas={orphanIdeas} />
+      <ProjectsPageClient projects={projectsWithIdeas} orphanIdeas={orphanIdeas} />
     </>
   );
 }
