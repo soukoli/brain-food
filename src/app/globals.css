@@ -257,3 +257,27 @@ html {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* Sonner toast customization */
+[data-sonner-toaster] {
+  --width: 340px;
+}
+
+/* Mobile: position toasts at bottom above tab bar */
+@media (max-width: 1023px) {
+  [data-sonner-toaster][data-y-position="top"] {
+    top: auto !important;
+    bottom: 90px !important;
+  }
+
+  [data-sonner-toast] {
+    --border-radius: 12px;
+  }
+}
+
+/* Desktop: keep at top-right corner */
+@media (min-width: 1024px) {
+  [data-sonner-toaster] {
+    --offset: 24px;
+  }
+}

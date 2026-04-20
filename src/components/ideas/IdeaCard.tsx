@@ -68,13 +68,13 @@ export function IdeaCard({
       });
 
       if (!response.ok) {
-        throw new Error("Failed to delete idea");
+        throw new Error("Failed to delete task");
       }
 
-      toast.success("Idea deleted");
+      toast.success("Task deleted");
       router.refresh();
     } catch {
-      toast.error("Failed to delete idea");
+      toast.error("Failed to delete task");
     } finally {
       setIsDeleting(false);
       setDeleteDialogOpen(false);
@@ -101,14 +101,14 @@ export function IdeaCard({
       });
 
       if (!response.ok) {
-        throw new Error("Failed to schedule idea");
+        throw new Error("Failed to schedule task");
       }
 
       toast.success("Added to Focus for today!");
       router.refresh();
       onSchedule?.();
     } catch {
-      toast.error("Failed to schedule idea");
+      toast.error("Failed to schedule task");
     } finally {
       setIsScheduling(false);
     }
@@ -241,7 +241,7 @@ export function IdeaCard({
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Idea</DialogTitle>
+            <DialogTitle>Delete Task</DialogTitle>
             <DialogDescription>
               Are you sure you want to delete &quot;{idea.title}&quot;? This action cannot be
               undone.

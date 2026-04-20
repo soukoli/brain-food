@@ -6,7 +6,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "BrainFood",
-  description: "Organize your ideas into projects and track your daily progress",
+  description: "Organize your tasks into projects and track your daily progress",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -52,7 +52,22 @@ export default function RootLayout({
         <ThemeProvider>
           <AuthProvider>
             {children}
-            <Toaster position="top-center" richColors closeButton />
+            <Toaster
+              position="top-center"
+              toastOptions={{
+                duration: 2500,
+                classNames: {
+                  toast: "rounded-xl shadow-lg border-none",
+                  success: "bg-success text-white",
+                  error: "bg-error text-white",
+                },
+                style: {
+                  padding: "12px 16px",
+                  fontSize: "14px",
+                },
+              }}
+              containerAriaLabel="Notifications"
+            />
           </AuthProvider>
         </ThemeProvider>
       </body>

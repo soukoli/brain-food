@@ -14,11 +14,11 @@ export function SwipeableCard({ children, onDelete, ideaTitle }: SwipeableCardPr
   const [isDeleting, setIsDeleting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const constraintsRef = useRef(null);
-  
+
   const x = useMotionValue(0);
   const deleteOpacity = useTransform(x, [-100, -50, 0], [1, 0.5, 0]);
   const deleteScale = useTransform(x, [-100, -50, 0], [1, 0.8, 0.5]);
-  
+
   const handleDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     // If swiped left more than 80px, show delete confirmation
     if (info.offset.x < -80) {
@@ -50,7 +50,7 @@ export function SwipeableCard({ children, onDelete, ideaTitle }: SwipeableCardPr
       >
         <div className="p-4">
           <p className="text-sm font-medium text-red-800 dark:text-red-200 mb-1">
-            Delete this idea?
+            Delete this task?
           </p>
           <p className="text-xs text-red-600 dark:text-red-400 mb-3 truncate">
             &quot;{ideaTitle}&quot;
@@ -85,7 +85,7 @@ export function SwipeableCard({ children, onDelete, ideaTitle }: SwipeableCardPr
       >
         <Trash2 className="w-5 h-5 text-white" />
       </motion.div>
-      
+
       {/* Swipeable content */}
       <motion.div
         drag="x"

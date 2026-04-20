@@ -89,8 +89,8 @@ export function ProjectDetailClient({ project, ideas }: ProjectDetailClientProps
 
   const handleDeleteIdea = async (ideaId: string) => {
     const response = await fetch(`/api/ideas/${ideaId}`, { method: "DELETE" });
-    if (!response.ok) throw new Error("Failed to delete idea");
-    toast.success("Idea deleted");
+    if (!response.ok) throw new Error("Failed to delete task");
+    toast.success("Task deleted");
     router.refresh();
   };
 
@@ -311,7 +311,7 @@ export function ProjectDetailClient({ project, ideas }: ProjectDetailClientProps
               className="text-[10px] h-5 px-1.5"
               style={{ color: project.color }}
             >
-              {ideas.length} idea{ideas.length !== 1 ? "s" : ""}
+              {ideas.length} task{ideas.length !== 1 ? "s" : ""}
             </Badge>
           </div>
         </div>

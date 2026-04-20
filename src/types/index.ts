@@ -43,6 +43,20 @@ export interface RecentProject {
 }
 
 /**
+ * Project stats for comparison chart
+ */
+export interface ProjectStats {
+  id: string;
+  name: string;
+  color: string;
+  taskCount: number;
+  completedCount: number;
+  inProgressCount: number;
+  totalTimeSpent: number;
+  lastActivityAt: Date;
+}
+
+/**
  * Timer state
  */
 export interface TimerState {

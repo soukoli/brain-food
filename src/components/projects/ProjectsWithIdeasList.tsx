@@ -147,10 +147,10 @@ export function ProjectsWithIdeasList({ projects, orphanIdeas = [] }: ProjectsWi
     });
 
     if (!response.ok) {
-      throw new Error("Failed to delete idea");
+      throw new Error("Failed to delete task");
     }
 
-    toast.success("Idea deleted");
+    toast.success("Task deleted");
     router.refresh();
   };
 
@@ -212,7 +212,7 @@ export function ProjectsWithIdeasList({ projects, orphanIdeas = [] }: ProjectsWi
   };
 
   const handleDeleteProject = async (projectId: string, projectName: string) => {
-    if (!confirm(`Delete "${projectName}" and all its ideas?`)) {
+    if (!confirm(`Delete "${projectName}" and all its tasks?`)) {
       return;
     }
 

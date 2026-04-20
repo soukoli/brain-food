@@ -137,10 +137,10 @@ export function CaptureForm({ projects: initialProjects }: CaptureFormProps) {
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || "Failed to capture idea");
+        throw new Error(data.error || "Failed to capture task");
       }
 
-      toast.success(scheduleForFocus ? "Idea captured and added to Focus!" : "Idea captured!");
+      toast.success(scheduleForFocus ? "Task captured and added to Focus!" : "Task captured!");
 
       // Reset form
       setTitle("");
@@ -183,10 +183,10 @@ export function CaptureForm({ projects: initialProjects }: CaptureFormProps) {
           {/* Title input - prominent and bold */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-              What&apos;s your idea? *
+              What&apos;s your task? *
             </label>
             <Input
-              placeholder="Quick thought, task, or idea..."
+              placeholder="Quick thought or task..."
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               autoFocus

@@ -5,22 +5,36 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { TaskTimerCard } from "@/components/focus/TaskTimerCard";
+import { KanbanBoard } from "@/components/focus/KanbanBoard";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Target, CheckCircle2, Clock, ArrowRight, Zap, RotateCcw, Lightbulb } from "lucide-react";
 import { formatTime } from "@/lib/utils";
 import { toast } from "sonner";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import type { IdeaWithProject } from "@/types";
+import type { Project } from "@/lib/db/schema";
 
 interface FocusClientProps {
   activeTasks: IdeaWithProject[];
   completedToday: IdeaWithProject[];
+  // For Kanban board (desktop)
+  readyTasks?: IdeaWithProject[];
+  inProgressTasks?: IdeaWithProject[];
+  projects?: Project[];
 }
 
-export function FocusClient({ activeTasks, completedToday }: FocusClientProps) {
+export function FocusClient({
+  activeTasks,
+  completedToday,
+  readyTasks = [],
+  inProgressTasks = [],
+  projects = [],
+}: FocusClientProps) {
   const router = useRouter();
   const [reopeningId, setReopeningId] = useState<string | null>(null);
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
 
   const handleReopenTask = async (task: IdeaWithProject) => {
     setReopeningId(task.id);
@@ -47,8 +61,60 @@ export function FocusClient({ activeTasks, completedToday }: FocusClientProps) {
   };
 
   const totalTimeToday = completedToday.reduce((acc, idea) => acc + idea.timeSpentSeconds, 0);
-  const runningTask = activeTasks.find((task) => task.isTimerRunning);
+  const runningTask = [...activeTasks, ...inProgressTasks].find((task) => task.isTimerRunning);
 
+  // Desktop: Kanban Board
+  if (isDesktop) {
+    return (
+      <div className="p-6 h-full flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-text-primary">Focus</h1>
+            <p className="text-text-secondary text-sm">
+              Drag tasks between columns to update status
+            </p>
+          </div>
+
+          <div className="flex items-center gap-4">
+            {runningTask && (
+              <Badge variant="default" className="animate-pulse bg-warning text-text-inverse">
+                <Clock className="w-3 h-3 mr-1" />
+                Timer Active
+              </Badge>
+            )}
+
+            {/* Stats */}
+            <div className="flex items-center gap-6 bg-muted rounded-xl px-4 py-2">
+              <div className="text-center">
+                <p className="text-xs text-text-muted">Today</p>
+                <p className="font-semibold text-warning">
+                  {activeTasks.length + inProgressTasks.length} tasks
+                </p>
+              </div>
+              <div className="w-px h-8 bg-border" />
+              <div className="text-center">
+                <p className="text-xs text-text-muted">Time</p>
+                <p className="font-semibold text-success">{formatTime(totalTimeToday)}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Kanban Board */}
+        <div className="flex-1 min-h-0">
+          <KanbanBoard
+            readyTasks={readyTasks}
+            inProgressTasks={inProgressTasks}
+            doneTasks={completedToday}
+            projects={projects}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Mobile: Original list view
   return (
     <>
       <PageHeader

@@ -1,16 +1,15 @@
 "use client";
 
-import { AppTabbar } from "@/components/layout/AppTabbar";
+import { ResponsiveLayout } from "@/components/layout/ResponsiveLayout";
+import { ScrollToTop } from "@/components/ui/scroll-to-top";
 import { Suspense } from "react";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-background pb-24">
-      <Suspense fallback={<PageLoadingFallback />}>
-        <div className="page-content">{children}</div>
-      </Suspense>
-      <AppTabbar />
-    </div>
+    <ResponsiveLayout>
+      <Suspense fallback={<PageLoadingFallback />}>{children}</Suspense>
+      <ScrollToTop />
+    </ResponsiveLayout>
   );
 }
 

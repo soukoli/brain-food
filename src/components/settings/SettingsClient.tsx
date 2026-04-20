@@ -94,7 +94,7 @@ export function SettingsClient({ user }: SettingsClientProps) {
       }
 
       toast.success(
-        `Backup created! ${result.data.projectCount} projects, ${result.data.ideaCount} ideas saved.`
+        `Backup created! ${result.data.projectCount} projects, ${result.data.ideaCount} tasks saved.`
       );
       fetchBackupInfo();
     } catch (error) {

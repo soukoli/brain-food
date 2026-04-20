@@ -34,15 +34,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {
-  Target,
-  Loader2,
-  CheckCircle2,
-  Trash2,
-  RotateCcw,
-  Play,
-  Clock,
-} from "lucide-react";
+import { Target, Loader2, CheckCircle2, Trash2, RotateCcw, Play, Clock } from "lucide-react";
 import { PRIORITIES } from "@/lib/constants";
 import { toast } from "sonner";
 import { formatTime } from "@/lib/utils";
@@ -117,15 +109,15 @@ export function IdeaSheet({ idea, projectId, projects, trigger, onSuccess }: Ide
       });
 
       if (!response.ok) {
-        throw new Error("Failed to delete idea");
+        throw new Error("Failed to delete task");
       }
 
-      toast.success("Idea deleted");
+      toast.success("Task deleted");
       setOpen(false);
       router.refresh();
       onSuccess?.();
     } catch {
-      toast.error("Failed to delete idea");
+      toast.error("Failed to delete task");
     } finally {
       setIsDeleting(false);
     }
@@ -194,10 +186,10 @@ export function IdeaSheet({ idea, projectId, projects, trigger, onSuccess }: Ide
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || "Failed to save idea");
+        throw new Error(data.error || "Failed to save task");
       }
 
-      toast.success(isEdit ? "Idea updated" : "Idea created");
+      toast.success(isEdit ? "Task updated" : "Task created");
       setOpen(false);
       router.refresh();
       onSuccess?.();
@@ -245,7 +237,9 @@ export function IdeaSheet({ idea, projectId, projects, trigger, onSuccess }: Ide
           {isEdit && idea.timeSpentSeconds > 0 && (
             <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 rounded-lg px-3 py-2">
               <Clock className="w-4 h-4" />
-              <span>Time spent: <strong>{formatTime(idea.timeSpentSeconds)}</strong></span>
+              <span>
+                Time spent: <strong>{formatTime(idea.timeSpentSeconds)}</strong>
+              </span>
             </div>
           )}
 
@@ -254,7 +248,7 @@ export function IdeaSheet({ idea, projectId, projects, trigger, onSuccess }: Ide
               Title *
             </label>
             <Input
-              placeholder="What's your idea?"
+              placeholder="What's your task?"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               autoFocus
@@ -314,7 +308,9 @@ export function IdeaSheet({ idea, projectId, projects, trigger, onSuccess }: Ide
                 Project {hasNoProject && <span className="text-orange-500">(Not assigned)</span>}
               </label>
               <Select value={selectedProjectId || "none"} onValueChange={setSelectedProjectId}>
-                <SelectTrigger className={hasNoProject ? "border-orange-300 dark:border-orange-700" : ""}>
+                <SelectTrigger
+                  className={hasNoProject ? "border-orange-300 dark:border-orange-700" : ""}
+                >
                   <SelectValue placeholder="Select a project" />
                 </SelectTrigger>
                 <SelectContent>
@@ -341,7 +337,7 @@ export function IdeaSheet({ idea, projectId, projects, trigger, onSuccess }: Ide
               <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Quick Actions
               </label>
-              
+
               <div className="grid grid-cols-2 gap-2">
                 {/* Add to Focus / Reopen & Focus */}
                 {!isScheduledForToday && (
@@ -394,9 +390,7 @@ export function IdeaSheet({ idea, projectId, projects, trigger, onSuccess }: Ide
                     ) : (
                       <RotateCcw className="w-5 h-5 text-blue-500" />
                     )}
-                    <span className="text-xs text-blue-600 dark:text-blue-400">
-                      Reopen
-                    </span>
+                    <span className="text-xs text-blue-600 dark:text-blue-400">Reopen</span>
                   </Button>
                 )}
 
@@ -413,9 +407,7 @@ export function IdeaSheet({ idea, projectId, projects, trigger, onSuccess }: Ide
                     ) : (
                       <Play className="w-5 h-5 text-blue-500" />
                     )}
-                    <span className="text-xs text-blue-600 dark:text-blue-400">
-                      Start Working
-                    </span>
+                    <span className="text-xs text-blue-600 dark:text-blue-400">Start Working</span>
                   </Button>
                 )}
 
@@ -427,16 +419,15 @@ export function IdeaSheet({ idea, projectId, projects, trigger, onSuccess }: Ide
                       className="h-auto py-3 flex-col gap-1 border-red-200 hover:bg-red-50 hover:border-red-400 dark:border-red-800 dark:hover:bg-red-950"
                     >
                       <Trash2 className="w-5 h-5 text-red-500" />
-                      <span className="text-xs text-red-600 dark:text-red-400">
-                        Delete
-                      </span>
+                      <span className="text-xs text-red-600 dark:text-red-400">Delete</span>
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Delete this idea?</AlertDialogTitle>
+                      <AlertDialogTitle>Delete this task?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        This will permanently delete &quot;{idea.title}&quot;. This action cannot be undone.
+                        This will permanently delete &quot;{idea.title}&quot;. This action cannot be
+                        undone.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

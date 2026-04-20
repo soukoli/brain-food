@@ -1,6 +1,6 @@
 import { getDbAsync } from "@/lib/db";
-import { ideas } from "@/lib/db/schema";
-import { eq, and, isNotNull, gte, lt, or, desc } from "drizzle-orm";
+import { ideas, projects } from "@/lib/db/schema";
+import { eq, and, isNotNull, gte, lt, or, desc, asc } from "drizzle-orm";
 import { getRequiredUser } from "@/lib/auth-utils";
 import { FocusClient } from "@/components/focus/FocusClient";
 
@@ -16,7 +16,33 @@ export default async function FocusPage() {
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
 
-  // Get active tasks (scheduled for today and not completed)
+  // Get all user's projects for the project selector
+  const userProjects = await db.query.projects.findMany({
+    where: eq(projects.userId, user.id),
+    orderBy: [asc(projects.name)],
+  });
+
+  // Get ready tasks (scheduled for today, inbox status)
+  const readyTasks = await db.query.ideas.findMany({
+    where: and(
+      eq(ideas.userId, user.id),
+      eq(ideas.status, "inbox"),
+      isNotNull(ideas.scheduledForToday),
+      gte(ideas.scheduledForToday, today),
+      lt(ideas.scheduledForToday, tomorrow)
+    ),
+    with: { project: true },
+    orderBy: [desc(ideas.updatedAt)],
+  });
+
+  // Get in-progress tasks
+  const inProgressTasks = await db.query.ideas.findMany({
+    where: and(eq(ideas.userId, user.id), eq(ideas.status, "in-progress")),
+    with: { project: true },
+    orderBy: [desc(ideas.isTimerRunning), desc(ideas.updatedAt)],
+  });
+
+  // Combined active tasks for mobile view (legacy compatibility)
   const activeTasks = await db.query.ideas.findMany({
     where: and(
       eq(ideas.userId, user.id),
@@ -50,5 +76,13 @@ export default async function FocusPage() {
     orderBy: [desc(ideas.completedAt)],
   });
 
-  return <FocusClient activeTasks={activeTasks} completedToday={completedToday} />;
+  return (
+    <FocusClient
+      activeTasks={activeTasks}
+      completedToday={completedToday}
+      readyTasks={readyTasks}
+      inProgressTasks={inProgressTasks}
+      projects={userProjects}
+    />
+  );
 }
