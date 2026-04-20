@@ -283,12 +283,12 @@ export function DashboardClient({
                     </div>
 
                     {/* Time spent */}
-                    <p className="text-sm font-semibold text-text-primary mb-0.5">
+                    <p className="text-xs text-text-secondary mb-0.5">
                       {formatTimeShort(project.totalTimeSpent)}
                     </p>
 
                     {/* Project name */}
-                    <p className="text-xs text-text-secondary truncate">{project.name}</p>
+                    <p className="text-sm font-medium text-text-primary truncate">{project.name}</p>
 
                     {/* Last activity */}
                     <p className="text-xs text-text-muted mt-1">{timeAgo} ago</p>
@@ -325,7 +325,6 @@ export function DashboardClient({
           <div className="space-y-2">
             {recentTasks.slice(0, 5).map((task) => {
               const isCompleted = task.status === "completed";
-              const isScheduled = !!task.scheduledForToday;
               const projectColor = task.project?.color ?? "#94a3b8";
 
               return (
@@ -359,24 +358,17 @@ export function DashboardClient({
                       )}
 
                       {/* Project label as colored tag */}
-                      <div className="flex items-center gap-2 mt-2">
-                        {task.project && (
-                          <span
-                            className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
-                            style={{
-                              backgroundColor: projectColor + "15",
-                              color: projectColor,
-                            }}
-                          >
-                            {task.project.name}
-                          </span>
-                        )}
-                        {isScheduled && !isCompleted && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-warning-light text-warning">
-                            Focus
-                          </span>
-                        )}
-                      </div>
+                      {task.project && (
+                        <span
+                          className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium mt-2"
+                          style={{
+                            backgroundColor: projectColor + "15",
+                            color: projectColor,
+                          }}
+                        >
+                          {task.project.name}
+                        </span>
+                      )}
                     </div>
 
                     {/* Play button - start focus */}
