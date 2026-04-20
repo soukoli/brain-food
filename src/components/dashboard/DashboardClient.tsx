@@ -26,7 +26,7 @@ interface DashboardClientProps {
   userImage?: string | null;
   stats: DashboardStats;
   recentProjects: RecentProject[];
-  todaysTasks: IdeaWithProject[];
+  recentTasks: IdeaWithProject[];
 }
 
 interface QuoteData {
@@ -50,7 +50,7 @@ export function DashboardClient({
   userImage,
   stats,
   recentProjects,
-  todaysTasks,
+  recentTasks,
 }: DashboardClientProps) {
   const router = useRouter();
   const [quote, setQuote] = useState<QuoteData | null>(null);
@@ -300,40 +300,40 @@ export function DashboardClient({
         </div>
       )}
 
-      {/* Today's Tasks Section */}
+      {/* Recent Tasks Section */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-base font-semibold text-text-primary">Today&apos;s Tasks</h2>
+          <h2 className="text-base font-semibold text-text-primary">Recent Tasks</h2>
           <Link
-            href="/focus"
+            href="/projects"
             className="text-sm text-text-secondary font-medium flex items-center gap-0.5"
           >
-            Focus
+            All Tasks
             <ChevronRight className="w-4 h-4" />
           </Link>
         </div>
 
-        {todaysTasks.length === 0 ? (
+        {recentTasks.length === 0 ? (
           <Card className="p-6 text-center">
             <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-primary-light flex items-center justify-center">
               <CheckSquare className="h-6 w-6 text-primary" />
             </div>
-            <p className="text-sm text-text-secondary mb-1">No tasks for today</p>
-            <p className="text-xs text-text-muted">Add tasks to Focus from your projects</p>
+            <p className="text-sm text-text-secondary mb-1">No tasks yet</p>
+            <p className="text-xs text-text-muted">Create your first task to get started</p>
           </Card>
         ) : (
           <div className="space-y-2">
-            {todaysTasks.slice(0, 5).map((task) => {
+            {recentTasks.slice(0, 5).map((task) => {
               const isCompleted = task.status === "completed";
+              const isScheduled = !!task.scheduledForToday;
               const projectColor = task.project?.color ?? "#94a3b8";
-              const hasTimeSpent = task.timeSpentSeconds > 0;
 
               return (
                 <Card key={task.id} className={`p-3 ${isCompleted ? "opacity-60" : ""}`}>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-start gap-3">
                     {/* Project color indicator */}
                     <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                      className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
                       style={{ backgroundColor: projectColor + "20" }}
                     >
                       <div
@@ -344,24 +344,37 @@ export function DashboardClient({
 
                     {/* Content */}
                     <div className="flex-1 min-w-0">
+                      {/* Title */}
                       <p
-                        className={`font-medium text-text-primary text-sm truncate ${isCompleted ? "line-through" : ""}`}
+                        className={`font-medium text-text-primary text-sm ${isCompleted ? "line-through" : ""}`}
                       >
                         {task.title}
                       </p>
-                      <div className="flex items-center gap-2 mt-0.5">
+
+                      {/* Description - 1 line */}
+                      {task.description && (
+                        <p className="text-xs text-text-secondary mt-0.5 line-clamp-1">
+                          {task.description}
+                        </p>
+                      )}
+
+                      {/* Project label as colored tag */}
+                      <div className="flex items-center gap-2 mt-2">
                         {task.project && (
-                          <span className="text-xs text-text-secondary truncate">
+                          <span
+                            className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                            style={{
+                              backgroundColor: projectColor + "15",
+                              color: projectColor,
+                            }}
+                          >
                             {task.project.name}
                           </span>
                         )}
-                        {hasTimeSpent && (
-                          <>
-                            <span className="text-text-muted">•</span>
-                            <span className="text-xs text-text-muted">
-                              {formatTimeShort(task.timeSpentSeconds)}
-                            </span>
-                          </>
+                        {isScheduled && !isCompleted && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-warning-light text-warning">
+                            Focus
+                          </span>
                         )}
                       </div>
                     </div>
@@ -371,7 +384,7 @@ export function DashboardClient({
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="shrink-0 h-9 w-9 rounded-xl bg-primary-light text-primary hover:bg-primary hover:text-white"
+                        className="shrink-0 h-9 w-9 rounded-xl bg-primary-light text-primary hover:bg-primary hover:text-white mt-0.5"
                         onClick={(e) => handleStartFocus(task, e)}
                       >
                         <Play className="w-4 h-4 ml-0.5" />
@@ -386,7 +399,7 @@ export function DashboardClient({
       </div>
 
       {/* Empty state when no projects */}
-      {recentProjects.length === 0 && todaysTasks.length === 0 && (
+      {recentProjects.length === 0 && recentTasks.length === 0 && (
         <Card className="p-8 text-center">
           <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary-light flex items-center justify-center">
             <FolderOpen className="h-8 w-8 text-primary" />

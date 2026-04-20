@@ -24,12 +24,12 @@ export default async function DashboardPage() {
     totalTasksResult,
     inProgressCountResult,
     recentProjectsData,
-    todaysTasks,
+    recentTasks,
   ] = await Promise.all([
     // Count of projects
     db.select({ value: count() }).from(projects).where(eq(projects.userId, user.id)),
 
-    // Count of today's tasks
+    // Count of today's tasks (scheduled for focus)
     db
       .select({ value: count() })
       .from(ideas)
@@ -69,14 +69,9 @@ export default async function DashboardPage() {
       .orderBy(desc(projects.updatedAt))
       .limit(5),
 
-    // Today's tasks with project info
+    // Recent tasks - last 5 modified tasks with project info
     db.query.ideas.findMany({
-      where: and(
-        eq(ideas.userId, user.id),
-        isNotNull(ideas.scheduledForToday),
-        gte(ideas.scheduledForToday, today),
-        lt(ideas.scheduledForToday, tomorrow)
-      ),
+      where: eq(ideas.userId, user.id),
       with: { project: true },
       orderBy: [desc(ideas.updatedAt)],
       limit: 5,
@@ -106,7 +101,7 @@ export default async function DashboardPage() {
         inProgressCount: inProgressCountResult[0]?.value ?? 0,
       }}
       recentProjects={recentProjects}
-      todaysTasks={todaysTasks}
+      recentTasks={recentTasks}
     />
   );
 }
